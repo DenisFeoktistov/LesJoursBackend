@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir gunicorn
 COPY . /app/
 
 RUN apt-get install -y wget
-python manage.py collectstatic --noinput
+RUN python manage.py collectstatic --noinput
 
 RUN apt-get update && apt-get install -y nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
