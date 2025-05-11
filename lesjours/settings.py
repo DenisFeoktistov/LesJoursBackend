@@ -32,6 +32,7 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['http://localhost:8000', 'http://localhost:8080', 'http://localhost:3000'])
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
