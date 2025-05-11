@@ -13,9 +13,9 @@ class MasterClassViewSet(viewsets.ModelViewSet):
     queryset = MasterClass.objects.all()
     serializer_class = MasterClassSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['price']
+    filterset_fields = ['start_price', 'final_price', 'age_restriction', 'duration']
     search_fields = ['title', 'description']
-    ordering_fields = ['price', 'created_at', 'title']
+    ordering_fields = ['start_price', 'final_price', 'created_at', 'title']
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
@@ -124,7 +124,7 @@ class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['masterclass', 'start_datetime', 'end_datetime']
+    filterset_fields = ['masterclass', 'start_datetime', 'end_datetime', 'available_seats']
     ordering_fields = ['start_datetime', 'end_datetime', 'available_seats']
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 

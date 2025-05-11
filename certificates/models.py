@@ -1,13 +1,16 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from decimal import Decimal
 
 
 class Certificate(models.Model):
     AMOUNT_CHOICES = [
-        (500, '500 RUB'),
-        (1000, '1000 RUB'),
-        (5000, '5000 RUB'),
+        (Decimal('1000.00'), '1000 RUB'),
+        (Decimal('2000.00'), '2000 RUB'),
+        (Decimal('3000.00'), '3000 RUB'),
+        (Decimal('5000.00'), '5000 RUB'),
+        (Decimal('10000.00'), '10000 RUB'),
     ]
 
     user = models.ForeignKey(

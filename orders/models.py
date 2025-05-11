@@ -64,6 +64,6 @@ class OrderItem(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.price:
-            self.price = self.masterclass.price
+            self.price = self.masterclass.final_price if hasattr(self.masterclass, 'final_price') else self.masterclass.start_price
         super().save(*args, **kwargs)
         self.order.calculate_total()
