@@ -20,6 +20,6 @@ RUN python manage.py collectstatic --noinput
 RUN apt-get update && apt-get install -y nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 8000
+EXPOSE 80
 
-CMD service nginx start && gunicorn lesjours.wsgi:application --bind 0.0.0.0:8080 --threads 10
+CMD service nginx start && gunicorn lesjours.wsgi:application --bind 0.0.0.0:8000 --threads 10
