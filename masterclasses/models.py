@@ -2,6 +2,7 @@ from django.core.validators import MaxValueValidator
 from django.db import models
 from django.utils.text import slugify
 from django.core.validators import MinValueValidator
+import random
 
 
 class MasterClass(models.Model):
@@ -20,6 +21,10 @@ class MasterClass(models.Model):
     details = models.JSONField(default=list, help_text="List of details about the masterclass")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    score_product_page = models.IntegerField(
+        default=0,
+        help_text="Оценка страницы продукта (0-100)",
+    )
 
     class Meta:
         ordering = ['-created_at']
