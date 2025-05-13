@@ -31,12 +31,13 @@ class MasterClassSerializer(serializers.ModelSerializer):
     bucket_link = serializers.SerializerMethodField()
     price = serializers.SerializerMethodField()
     in_wishlist = serializers.SerializerMethodField()
-    parameters = serializers.JSONField(required=False)
-    details = serializers.JSONField(required=False)
+    parameters = serializers.SerializerMethodField()
+    details = serializers.SerializerMethodField()
     slug = serializers.CharField(
         required=False,
         validators=[UniqueValidator(queryset=MasterClass.objects.all())],
     )
+    score_product_page = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = MasterClass
@@ -44,7 +45,7 @@ class MasterClassSerializer(serializers.ModelSerializer):
             'id', 'name', 'slug', 'short_description', 'long_description',
             'bucket_link', 'age_restriction', 'duration',
             'created_at', 'updated_at', 'events', 'location', 'price',
-            'in_wishlist', 'parameters', 'details'
+            'in_wishlist', 'parameters', 'details', 'score_product_page'
         ]
         read_only_fields = ['slug', 'created_at', 'updated_at', 'in_wishlist']
 
@@ -62,6 +63,12 @@ class MasterClassSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj in request.user.profile.favorite_masterclasses.all()
         return False
+
+    def get_parameters(self, obj):
+        return obj.parameters
+
+    def get_details(self, obj):
+        return obj.details
 
     def to_internal_value(self, data):
         price_data = data.get('price', {})
