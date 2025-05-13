@@ -7,6 +7,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from ..models import MasterClass, Event
 from .serializers import MasterClassSerializer, EventSerializer
+from .filters import MasterClassFilter
 from rest_framework import status
 
 
@@ -14,9 +15,9 @@ class MasterClassViewSet(viewsets.ModelViewSet):
     queryset = MasterClass.objects.all()
     serializer_class = MasterClassSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['start_price', 'final_price', 'age_restriction', 'duration']
-    search_fields = ['title', 'description']
-    ordering_fields = ['start_price', 'final_price', 'created_at', 'title']
+    filterset_class = MasterClassFilter
+    search_fields = ['name', 'short_description', 'long_description']
+    ordering_fields = ['start_price', 'final_price', 'created_at', 'name']
     permission_classes = [permissions.AllowAny]
 
     def get_serializer_context(self):
