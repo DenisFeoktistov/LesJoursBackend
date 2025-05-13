@@ -25,50 +25,118 @@ class MasterClassAPITest(TestCase):
         self.client.force_authenticate(user=self.user)
         
         self.masterclass_data = {
-            'title': 'Test Masterclass',
-            'description': 'Test Description',
-            'start_price': 100.00,
-            'final_price': 90.00,
-            'bucket_list': ['image1.jpg', 'image2.jpg'],
+            'name': 'Test Masterclass',
+            'short_description': 'Test Description',
+            'price': {
+                'start_price': 100.00,
+                'final_price': 90.00
+            },
+            'bucket_link': ['image1.jpg', 'image2.jpg'],
             'age_restriction': 18,
             'duration': 120
         }
-        self.masterclass = MasterClass.objects.create(**self.masterclass_data)
+        self.masterclass = MasterClass.objects.create(
+            name=self.masterclass_data['name'],
+            short_description=self.masterclass_data['short_description'],
+            start_price=self.masterclass_data['price']['start_price'],
+            final_price=self.masterclass_data['price']['final_price'],
+            bucket_link=self.masterclass_data['bucket_link'],
+            age_restriction=self.masterclass_data['age_restriction'],
+            duration=self.masterclass_data['duration']
+        )
         self.url = reverse('masterclass-list')
 
     def test_create_masterclass(self):
-        # Create a new masterclass with a different title to avoid slug conflict
+        # Create a new masterclass with a different name to avoid slug conflict
         new_masterclass_data = self.masterclass_data.copy()
-        new_masterclass_data['title'] = 'Another Test Masterclass'
+        new_masterclass_data['name'] = 'Another Test Masterclass'
         response = self.client.post(self.url, new_masterclass_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(MasterClass.objects.count(), 2)
-        self.assertEqual(MasterClass.objects.get(title='Another Test Masterclass').slug, 'another-test-masterclass')
+        self.assertEqual(MasterClass.objects.get(name='Another Test Masterclass').slug, 'another-test-masterclass')
 
     def test_list_masterclasses(self):
         # Delete any existing masterclasses to ensure clean state
         MasterClass.objects.all().delete()
         # Create a single masterclass for testing
-        MasterClass.objects.create(**self.masterclass_data)
+        MasterClass.objects.create(
+            name=self.masterclass_data['name'],
+            short_description=self.masterclass_data['short_description'],
+            start_price=self.masterclass_data['price']['start_price'],
+            final_price=self.masterclass_data['price']['final_price'],
+            bucket_link=self.masterclass_data['bucket_link'],
+            age_restriction=self.masterclass_data['age_restriction'],
+            duration=self.masterclass_data['duration']
+        )
         
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('results', response.data)
         self.assertEqual(len(response.data['results']), 1)
+        self.assertIn('in_wishlist', response.data['results'][0])
+        self.assertFalse(response.data['results'][0]['in_wishlist'])
+
+    def test_masterclass_in_wishlist(self):
+        # Add masterclass to user's wishlist
+        self.user.profile.favorite_masterclasses.add(self.masterclass)
+        
+        # Test list endpoint
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['results'][0]['in_wishlist'])
+        
+        # Test detail endpoint
+        detail_url = reverse('masterclass-detail', args=[self.masterclass.id])
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['in_wishlist'])
+
+    def test_masterclass_not_in_wishlist(self):
+        # Ensure masterclass is not in wishlist
+        self.user.profile.favorite_masterclasses.remove(self.masterclass)
+        
+        # Test list endpoint
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['results'][0]['in_wishlist'])
+        
+        # Test detail endpoint
+        detail_url = reverse('masterclass-detail', args=[self.masterclass.id])
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['in_wishlist'])
+
+    def test_unauthenticated_user_wishlist(self):
+        # Test as unauthenticated user
+        self.client.force_authenticate(user=None)
+        
+        # Test list endpoint
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['results'][0]['in_wishlist'])
+        
+        # Test detail endpoint
+        detail_url = reverse('masterclass-detail', args=[self.masterclass.id])
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['in_wishlist'])
 
     def test_retrieve_masterclass(self):
         url = reverse('masterclass-detail', args=[self.masterclass.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['title'], self.masterclass.title)
+        self.assertEqual(response.data['name'], self.masterclass.name)
+        self.assertIn('in_wishlist', response.data)
+        self.assertFalse(response.data['in_wishlist'])
 
     def test_update_masterclass(self):
         url = reverse('masterclass-detail', args=[self.masterclass.id])
         updated_data = self.masterclass_data.copy()
-        updated_data['title'] = 'Updated Masterclass'
+        updated_data['name'] = 'Updated Masterclass'
         response = self.client.put(url, updated_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['title'], 'Updated Masterclass')
+        self.assertEqual(response.data['name'], 'Updated Masterclass')
+        self.assertIn('in_wishlist', response.data)
 
     def test_delete_masterclass(self):
         url = reverse('masterclass-detail', args=[self.masterclass.id])
@@ -83,41 +151,44 @@ class MasterClassAPITest(TestCase):
         self.assertEqual(len(response.data), 0)
 
     def test_create_masterclass_duplicate_slug(self):
-        # Try to create a masterclass with the same title (slug conflict)
+        # Try to create a masterclass with the same name (slug conflict)
         duplicate_data = self.masterclass_data.copy()
-        duplicate_data['title'] = self.masterclass_data['title']  # Same title
+        duplicate_data['name'] = self.masterclass_data['name']  # Same name
         response = self.client.post(self.url, duplicate_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('slug', response.data)
 
     def test_create_masterclass_missing_required(self):
-        # Missing title
+        # Missing name
         data = self.masterclass_data.copy()
-        data.pop('title')
+        data.pop('name')
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('title', response.data)
+        self.assertIn('name', response.data)
 
     def test_create_masterclass_invalid_price(self):
         data = self.masterclass_data.copy()
-        data['title'] = 'Unique Title for Invalid Price'
-        data['start_price'] = -10
+        data['name'] = 'Unique Name for Invalid Price'
+        data['price'] = {'start_price': -10, 'final_price': 90.00}
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('start_price', response.data)
+        self.assertIn('price', response.data)
+        self.assertIn('start_price', response.data['price'])
 
     def test_partial_update_masterclass(self):
         url = reverse('masterclass-detail', args=[self.masterclass.id])
-        response = self.client.patch(url, {'description': 'Partially updated'}, format='json')
+        response = self.client.patch(url, {'short_description': 'Partially updated', 'price': {'start_price': 100.00, 'final_price': 90.00}}, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.masterclass.refresh_from_db()
-        self.assertEqual(self.masterclass.description, 'Partially updated')
+        self.assertEqual(self.masterclass.short_description, 'Partially updated')
+        self.assertIn('in_wishlist', response.data)
 
     def test_filter_masterclasses(self):
         response = self.client.get(self.url + '?age_restriction=18')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('results', response.data)
         self.assertGreaterEqual(len(response.data['results']), 1)
+        self.assertIn('in_wishlist', response.data['results'][0])
 
     def test_unauthenticated_access(self):
         self.client.force_authenticate(user=None)
@@ -138,6 +209,44 @@ class MasterClassAPITest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(response.data), 1)
 
+    def test_toggle_wishlist_add(self):
+        # Test adding to wishlist
+        url = reverse('masterclass-toggle-wishlist', args=[self.masterclass.id])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['in_wishlist'])
+        self.assertEqual(response.data['message'], 'Masterclass added to wishlist')
+        
+        # Verify it's actually in the wishlist
+        self.assertTrue(self.masterclass in self.user.profile.favorite_masterclasses.all())
+
+    def test_toggle_wishlist_remove(self):
+        # First add to wishlist
+        self.user.profile.favorite_masterclasses.add(self.masterclass)
+        
+        # Test removing from wishlist
+        url = reverse('masterclass-toggle-wishlist', args=[self.masterclass.id])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['in_wishlist'])
+        self.assertEqual(response.data['message'], 'Masterclass removed from wishlist')
+        
+        # Verify it's actually removed from wishlist
+        self.assertFalse(self.masterclass in self.user.profile.favorite_masterclasses.all())
+
+    def test_toggle_wishlist_unauthenticated(self):
+        # Test as unauthenticated user
+        self.client.force_authenticate(user=None)
+        url = reverse('masterclass-toggle-wishlist', args=[self.masterclass.id])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_toggle_wishlist_nonexistent(self):
+        # Test with non-existent masterclass
+        url = reverse('masterclass-toggle-wishlist', args=[99999])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
 
 class EventAPITest(TestCase):
     def setUp(self):
@@ -154,8 +263,8 @@ class EventAPITest(TestCase):
         self.client.force_authenticate(user=self.user)
         
         self.masterclass = MasterClass.objects.create(
-            title='Test Masterclass',
-            description='Test Description',
+            name='Test Masterclass',
+            short_description='Test Description',
             start_price=100.00,
             final_price=90.00,
             duration=120

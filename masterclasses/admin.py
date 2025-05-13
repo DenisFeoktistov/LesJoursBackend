@@ -9,10 +9,10 @@ class EventInline(admin.TabularInline):
 
 @admin.register(MasterClass)
 class MasterClassAdmin(admin.ModelAdmin):
-    list_display = ('title', 'start_price', 'final_price', 'age_restriction', 'duration', 'created_at')
+    list_display = ('name', 'start_price', 'final_price', 'age_restriction', 'duration', 'created_at')
     list_filter = ('age_restriction', 'duration')
-    search_fields = ('title', 'description')
-    prepopulated_fields = {'slug': ('title',)}
+    search_fields = ('name', 'short_description')
+    prepopulated_fields = {'slug': ('name',)}
     inlines = [EventInline]
     readonly_fields = ('created_at', 'updated_at')
 

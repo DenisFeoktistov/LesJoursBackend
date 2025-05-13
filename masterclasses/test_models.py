@@ -7,23 +7,23 @@ from .models import MasterClass, Event
 class MasterClassModelTest(TestCase):
     def setUp(self):
         self.masterclass_data = {
-            'title': 'Test Masterclass',
-            'description': 'Test Description',
+            'name': 'Test Masterclass',
+            'short_description': 'Test Description',
             'start_price': 100.00,
             'final_price': 90.00,
-            'bucket_list': ['image1.jpg', 'image2.jpg'],
+            'bucket_link': ['image1.jpg', 'image2.jpg'],
             'age_restriction': 18,
             'duration': 120
         }
         self.masterclass = MasterClass.objects.create(**self.masterclass_data)
 
     def test_masterclass_creation(self):
-        self.assertEqual(self.masterclass.title, 'Test Masterclass')
+        self.assertEqual(self.masterclass.name, 'Test Masterclass')
         self.assertEqual(self.masterclass.slug, 'test-masterclass')
-        self.assertEqual(self.masterclass.description, 'Test Description')
+        self.assertEqual(self.masterclass.short_description, 'Test Description')
         self.assertEqual(self.masterclass.start_price, 100.00)
         self.assertEqual(self.masterclass.final_price, 90.00)
-        self.assertEqual(self.masterclass.bucket_list, ['image1.jpg', 'image2.jpg'])
+        self.assertEqual(self.masterclass.bucket_link, ['image1.jpg', 'image2.jpg'])
         self.assertEqual(self.masterclass.age_restriction, 18)
         self.assertEqual(self.masterclass.duration, 120)
 
@@ -32,8 +32,8 @@ class MasterClassModelTest(TestCase):
 
     def test_masterclass_slug_auto_generation(self):
         masterclass2 = MasterClass.objects.create(
-            title='Another Test Masterclass',
-            description='Another Description',
+            name='Another Test Masterclass',
+            short_description='Another Description',
             start_price=200.00,
             final_price=180.00
         )
@@ -43,8 +43,8 @@ class MasterClassModelTest(TestCase):
 class EventModelTest(TestCase):
     def setUp(self):
         self.masterclass = MasterClass.objects.create(
-            title='Test Masterclass',
-            description='Test Description',
+            name='Test Masterclass',
+            short_description='Test Description',
             start_price=100.00,
             final_price=90.00,
             duration=120
@@ -74,9 +74,10 @@ class EventModelTest(TestCase):
         self.assertTrue(self.event.is_full())
 
     def test_event_reserve_seat(self):
-        initial_seats = self.event.available_seats
+        initial_occupied = self.event.occupied_seats
         self.assertTrue(self.event.reserve_seat())
-        self.assertEqual(self.event.available_seats, initial_seats - 1)
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.occupied_seats, initial_occupied + 1)
 
         # Test reserving when full
         self.event.available_seats = 0
@@ -87,8 +88,8 @@ class EventModelTest(TestCase):
 class EventStrTest(TestCase):
     def setUp(self):
         self.masterclass = MasterClass.objects.create(
-            title='EventStr Masterclass',
-            description='EventStr Description',
+            name='EventStr Masterclass',
+            short_description='EventStr Description',
             start_price=100.00,
             final_price=90.00,
             duration=120

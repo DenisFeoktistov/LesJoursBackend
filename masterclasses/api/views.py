@@ -7,6 +7,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from ..models import MasterClass, Event
 from .serializers import MasterClassSerializer, EventSerializer
+from rest_framework import status
 
 
 class MasterClassViewSet(viewsets.ModelViewSet):
@@ -17,6 +18,11 @@ class MasterClassViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'description']
     ordering_fields = ['start_price', 'final_price', 'created_at', 'title']
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
@@ -118,6 +124,48 @@ class MasterClassViewSet(viewsets.ModelViewSet):
         events = masterclass.events.all()
         serializer = EventSerializer(events, many=True)
         return Response(serializer.data)
+
+    @swagger_auto_schema(
+        operation_description="Toggle masterclass in wishlist",
+        responses={
+            200: openapi.Response(
+                description="Masterclass wishlist status updated successfully",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'in_wishlist': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            401: "Unauthorized",
+            404: "Not Found"
+        }
+    )
+    @action(detail=True, methods=['post'])
+    def toggle_wishlist(self, request, pk=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {'error': 'Authentication required'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        masterclass = self.get_object()
+        profile = request.user.profile
+
+        if masterclass in profile.favorite_masterclasses.all():
+            profile.favorite_masterclasses.remove(masterclass)
+            message = 'Masterclass removed from wishlist'
+            in_wishlist = False
+        else:
+            profile.favorite_masterclasses.add(masterclass)
+            message = 'Masterclass added to wishlist'
+            in_wishlist = True
+
+        return Response({
+            'in_wishlist': in_wishlist,
+            'message': message
+        })
 
 
 class EventViewSet(viewsets.ModelViewSet):

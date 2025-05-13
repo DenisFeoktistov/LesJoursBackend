@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 import environ
+import sys
 
 # Initialize environ
 env = environ.Env(
@@ -109,9 +110,17 @@ WSGI_APPLICATION = 'lesjours.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': env.db()
-}
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
+else:
+    DATABASES = {
+        'default': env.db()
+    }
 
 
 # Password validation
@@ -203,6 +212,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
         'users.api.authentication.ExpiringTokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
@@ -211,6 +221,11 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
 }
+
+# JWT Settings
+from users.api.jwt_settings import SIMPLE_JWT as SIMPLE_JWT_BASE
+SIMPLE_JWT = SIMPLE_JWT_BASE.copy()
+SIMPLE_JWT["SIGNING_KEY"] = SECRET_KEY
 
 # Swagger settings
 SWAGGER_SETTINGS = {
@@ -231,3 +246,6 @@ SWAGGER_SETTINGS = {
         'delete',
     ],
 }
+
+# Cart settings
+CART_SESSION_ID = 'cart'

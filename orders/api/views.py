@@ -5,6 +5,9 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .serializers import OrderSerializer, OrderItemSerializer
 from ..models import Order, OrderItem
+from ..utils import Cart
+from rest_framework.views import APIView
+from django.conf import settings
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -196,4 +199,74 @@ class OrderItemViewSet(viewsets.ModelViewSet):
         }
     )
     def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs) 
+        return super().destroy(request, *args, **kwargs)
+
+
+class CartView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        cart = Cart(request)
+        return Response({
+            'items': cart.get_items(),
+            'total_price': str(cart.get_total_price())
+        })
+
+    def post(self, request):
+        if request.path.endswith('clear/'):
+            cart = Cart(request)
+            cart.clear()
+            return Response({
+                'items': [],
+                'total_price': '0.00'
+            })
+        cart = Cart(request)
+        item_type = request.data.get('type')
+        item_id = request.data.get('id')
+        quantity = int(request.data.get('quantity', 1))
+        if not item_type or not item_id:
+            return Response(
+                {'error': 'Type and id are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if item_type not in ['masterclass', 'certificate']:
+            return Response(
+                {'error': 'Invalid item type'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        cart.add(item_type, item_id, quantity)
+        return Response({
+            'items': cart.get_items(),
+            'total_price': str(cart.get_total_price())
+        })
+
+    def put(self, request):
+        cart = Cart(request)
+        item_type = request.data.get('type')
+        item_id = request.data.get('id')
+        quantity = int(request.data.get('quantity', 0))
+        if not item_type or not item_id:
+            return Response(
+                {'error': 'Type and id are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        cart.update(item_type, item_id, quantity)
+        return Response({
+            'items': cart.get_items(),
+            'total_price': str(cart.get_total_price())
+        })
+
+    def delete(self, request):
+        cart = Cart(request)
+        item_type = request.data.get('type')
+        item_id = request.data.get('id')
+        if not item_type or not item_id:
+            return Response(
+                {'error': 'Type and id are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        cart.remove(item_type, item_id)
+        return Response({
+            'items': cart.get_items(),
+            'total_price': str(cart.get_total_price())
+        }) 

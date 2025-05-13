@@ -10,6 +10,7 @@ from .admin import OrderAdmin
 from rest_framework.reverse import reverse as drf_reverse
 from orders.api.serializers import OrderSerializer
 from rest_framework.exceptions import ValidationError
+from certificates.models import Certificate
 
 User = get_user_model()
 
@@ -23,11 +24,11 @@ class OrderAPITest(TestCase):
         )
         self.client.force_authenticate(user=self.user)
         self.masterclass = MasterClass.objects.create(
-            title='Order Test Masterclass',
-            description='Order Test Description',
+            name='Order Test Masterclass',
+            short_description='Order Test Description',
             start_price=100.00,
             final_price=90.00,
-            bucket_list=['img.jpg'],
+            bucket_link=['img.jpg'],
             age_restriction=18,
             duration=120
         )
@@ -84,11 +85,11 @@ class OrderModelTest(TestCase):
             password='testpass123'
         )
         self.masterclass = MasterClass.objects.create(
-            title='Model Test Masterclass',
-            description='Model Test Description',
+            name='Model Test Masterclass',
+            short_description='Model Test Description',
             start_price=100.00,
             final_price=80.00,
-            bucket_list=['img2.jpg'],
+            bucket_link=['img2.jpg'],
             age_restriction=18,
             duration=90
         )
@@ -126,7 +127,7 @@ class OrderModelTest(TestCase):
         self.assertIn(str(self.user.email), str(self.order))
 
     def test_orderitem_str(self):
-        self.assertIn(self.masterclass.title, str(self.item1))
+        self.assertIn(self.masterclass.name, str(self.item1))
         self.assertIn('x', str(self.item1))
 
 class OrderAdminTest(TestCase):
@@ -162,11 +163,11 @@ class OrderItemAPITest(TestCase):
         )
         self.client.force_authenticate(user=self.user)
         self.masterclass = MasterClass.objects.create(
-            title='OrderItem Test Masterclass',
-            description='OrderItem Test Description',
+            name='OrderItem Test Masterclass',
+            short_description='OrderItem Test Description',
             start_price=100.00,
             final_price=90.00,
-            bucket_list=['img.jpg'],
+            bucket_link=['img.jpg'],
             age_restriction=18,
             duration=120
         )
@@ -251,3 +252,132 @@ class OrderSerializerValidateItemsTest(TestCase):
         serializer = OrderSerializer()
         value = serializer.validate_items([{'type': 'event', 'id': 1, 'quantity': 2}])
         self.assertEqual(value, [{'type': 'event', 'id': 1, 'quantity': 2}])
+
+class CartAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='cartuser',
+            email='cartuser@example.com',
+            password='testpass123'
+        )
+        self.masterclass = MasterClass.objects.create(
+            name='Cart Test Masterclass',
+            short_description='Cart Test Description',
+            start_price=100.00,
+            final_price=90.00,
+            bucket_link=['img.jpg'],
+            age_restriction=18,
+            duration=120
+        )
+        self.certificate = Certificate.objects.create(
+            user=self.user,
+            amount=1000.00,
+            code='TEST123'
+        )
+        self.cart_url = reverse('cart')
+
+    def test_get_empty_cart(self):
+        response = self.client.get(self.cart_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['items'], [])
+        self.assertEqual(response.data['total_price'], '0.00')
+
+    def test_add_masterclass_to_cart(self):
+        data = {
+            'type': 'masterclass',
+            'id': self.masterclass.id,
+            'quantity': 2
+        }
+        response = self.client.post(self.cart_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['items']), 1)
+        self.assertEqual(response.data['total_price'], '180.00')
+
+    def test_add_certificate_to_cart(self):
+        data = {
+            'type': 'certificate',
+            'id': self.certificate.id,
+            'quantity': 1
+        }
+        response = self.client.post(self.cart_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['items']), 1)
+        self.assertEqual(response.data['total_price'], '1000.00')
+
+    def test_update_cart_item(self):
+        # First add an item
+        data = {
+            'type': 'masterclass',
+            'id': self.masterclass.id,
+            'quantity': 1
+        }
+        self.client.post(self.cart_url, data, format='json')
+
+        # Then update it
+        update_data = {
+            'type': 'masterclass',
+            'id': self.masterclass.id,
+            'quantity': 3
+        }
+        response = self.client.put(self.cart_url, update_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['items']), 1)
+        self.assertEqual(response.data['total_price'], '270.00')
+
+    def test_remove_cart_item(self):
+        # First add an item
+        data = {
+            'type': 'masterclass',
+            'id': self.masterclass.id,
+            'quantity': 1
+        }
+        self.client.post(self.cart_url, data, format='json')
+
+        # Then remove it
+        remove_data = {
+            'type': 'masterclass',
+            'id': self.masterclass.id
+        }
+        response = self.client.delete(self.cart_url, remove_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['items']), 0)
+        self.assertEqual(response.data['total_price'], '0.00')
+
+    def test_clear_cart(self):
+        # First add some items
+        data1 = {
+            'type': 'masterclass',
+            'id': self.masterclass.id,
+            'quantity': 1
+        }
+        data2 = {
+            'type': 'certificate',
+            'id': self.certificate.id,
+            'quantity': 1
+        }
+        self.client.post(self.cart_url, data1, format='json')
+        self.client.post(self.cart_url, data2, format='json')
+
+        # Then clear the cart
+        response = self.client.post(reverse('cart-clear'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['items']), 0)
+        self.assertEqual(response.data['total_price'], '0.00')
+
+    def test_invalid_item_type(self):
+        data = {
+            'type': 'invalid',
+            'id': 1,
+            'quantity': 1
+        }
+        response = self.client.post(self.cart_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_missing_required_fields(self):
+        data = {
+            'type': 'masterclass'
+            # missing id
+        }
+        response = self.client.post(self.cart_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
