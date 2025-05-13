@@ -17,7 +17,7 @@ class MasterClassViewSet(viewsets.ModelViewSet):
     filterset_fields = ['start_price', 'final_price', 'age_restriction', 'duration']
     search_fields = ['title', 'description']
     ordering_fields = ['start_price', 'final_price', 'created_at', 'title']
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.AllowAny]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()

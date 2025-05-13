@@ -27,22 +27,40 @@ class MasterClassAPITest(TestCase):
         self.masterclass_data = {
             'name': 'Test Masterclass',
             'short_description': 'Test Description',
+            'long_description': 'Test Long Description',
             'price': {
                 'start_price': 100.00,
                 'final_price': 90.00
             },
             'bucket_link': ['image1.jpg', 'image2.jpg'],
             'age_restriction': 18,
-            'duration': 120
+            'duration': 120,
+            'parameters': {
+                'Адрес': ['г. Москва, Климентовский переулок, 6'],
+                'Контакты': ['+7 (983) 285-83-99'],
+                'Возраст': ['12+'],
+                'Продолжительность': ['2 часа'],
+                'Материалы включены': ['Да'],
+                'Подходит для новичков': ['Да'],
+                'Количество участников': ['8']
+            },
+            'details': [
+                'Сборка бенто-торта',
+                'Выравнивание кремом',
+                'Декорирование на ваш вкус'
+            ]
         }
         self.masterclass = MasterClass.objects.create(
             name=self.masterclass_data['name'],
             short_description=self.masterclass_data['short_description'],
+            long_description=self.masterclass_data['long_description'],
             start_price=self.masterclass_data['price']['start_price'],
             final_price=self.masterclass_data['price']['final_price'],
             bucket_link=self.masterclass_data['bucket_link'],
             age_restriction=self.masterclass_data['age_restriction'],
-            duration=self.masterclass_data['duration']
+            duration=self.masterclass_data['duration'],
+            parameters=self.masterclass_data['parameters'],
+            details=self.masterclass_data['details']
         )
         self.url = reverse('masterclass-list')
 

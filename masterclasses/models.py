@@ -8,6 +8,7 @@ class MasterClass(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
     short_description = models.TextField()
+    long_description = models.TextField(blank=True)
     start_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     final_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     bucket_link = models.JSONField(default=list)  # Will store list of image URLs
@@ -15,6 +16,8 @@ class MasterClass(models.Model):
     duration = models.PositiveIntegerField(default=60, help_text="Duration in minutes")
     location = models.CharField(max_length=500, blank=True, help_text="Address where the masterclass will be held")
     max_seats = models.PositiveIntegerField(default=20, help_text="Maximum number of seats available")
+    parameters = models.JSONField(default=dict, help_text="Dictionary of parameters with their values")
+    details = models.JSONField(default=list, help_text="List of details about the masterclass")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

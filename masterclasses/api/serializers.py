@@ -31,6 +31,8 @@ class MasterClassSerializer(serializers.ModelSerializer):
     bucket_link = serializers.SerializerMethodField()
     price = serializers.SerializerMethodField()
     in_wishlist = serializers.SerializerMethodField()
+    parameters = serializers.JSONField(required=False)
+    details = serializers.JSONField(required=False)
     slug = serializers.CharField(
         required=False,
         validators=[UniqueValidator(queryset=MasterClass.objects.all())],
@@ -39,15 +41,15 @@ class MasterClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = MasterClass
         fields = [
-            'id', 'name', 'slug', 'short_description',
+            'id', 'name', 'slug', 'short_description', 'long_description',
             'bucket_link', 'age_restriction', 'duration',
             'created_at', 'updated_at', 'events', 'location', 'price',
-            'in_wishlist'
+            'in_wishlist', 'parameters', 'details'
         ]
         read_only_fields = ['slug', 'created_at', 'updated_at', 'in_wishlist']
 
     def get_bucket_link(self, obj):
-        return [{"url": url} for url in obj.bucket_link]
+        return [{"url": obj.bucket_link}]
 
     def get_price(self, obj):
         return {

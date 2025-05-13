@@ -9,11 +9,26 @@ class MasterClassModelTest(TestCase):
         self.masterclass_data = {
             'name': 'Test Masterclass',
             'short_description': 'Test Description',
+            'long_description': 'Test Long Description',
             'start_price': 100.00,
             'final_price': 90.00,
             'bucket_link': ['image1.jpg', 'image2.jpg'],
             'age_restriction': 18,
-            'duration': 120
+            'duration': 120,
+            'parameters': {
+                'Адрес': ['г. Москва, Климентовский переулок, 6'],
+                'Контакты': ['+7 (983) 285-83-99'],
+                'Возраст': ['12+'],
+                'Продолжительность': ['2 часа'],
+                'Материалы включены': ['Да'],
+                'Подходит для новичков': ['Да'],
+                'Количество участников': ['8']
+            },
+            'details': [
+                'Сборка бенто-торта',
+                'Выравнивание кремом',
+                'Декорирование на ваш вкус'
+            ]
         }
         self.masterclass = MasterClass.objects.create(**self.masterclass_data)
 
@@ -21,11 +36,14 @@ class MasterClassModelTest(TestCase):
         self.assertEqual(self.masterclass.name, 'Test Masterclass')
         self.assertEqual(self.masterclass.slug, 'test-masterclass')
         self.assertEqual(self.masterclass.short_description, 'Test Description')
+        self.assertEqual(self.masterclass.long_description, 'Test Long Description')
         self.assertEqual(self.masterclass.start_price, 100.00)
         self.assertEqual(self.masterclass.final_price, 90.00)
         self.assertEqual(self.masterclass.bucket_link, ['image1.jpg', 'image2.jpg'])
         self.assertEqual(self.masterclass.age_restriction, 18)
         self.assertEqual(self.masterclass.duration, 120)
+        self.assertEqual(self.masterclass.parameters, self.masterclass_data['parameters'])
+        self.assertEqual(self.masterclass.details, self.masterclass_data['details'])
 
     def test_masterclass_str(self):
         self.assertEqual(str(self.masterclass), 'Test Masterclass')
