@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.contrib.auth import get_user_model
-from masterclasses.models import MasterClass
+from masterclasses.models import MasterClass, Event
 from .models import Order, OrderItem
 from django.contrib.admin.sites import AdminSite
 from .admin import OrderAdmin
@@ -11,6 +11,9 @@ from rest_framework.reverse import reverse as drf_reverse
 from orders.api.serializers import OrderSerializer
 from rest_framework.exceptions import ValidationError
 from certificates.models import Certificate
+from django.utils import timezone
+from datetime import timedelta
+from orders.utils import Cart
 
 User = get_user_model()
 
@@ -253,7 +256,7 @@ class OrderSerializerValidateItemsTest(TestCase):
         value = serializer.validate_items([{'type': 'event', 'id': 1, 'quantity': 2}])
         self.assertEqual(value, [{'type': 'event', 'id': 1, 'quantity': 2}])
 
-class CartAPITest(TestCase):
+class CartTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(
@@ -261,83 +264,157 @@ class CartAPITest(TestCase):
             email='cartuser@example.com',
             password='testpass123'
         )
+        
+        # Create test masterclass
         self.masterclass = MasterClass.objects.create(
-            name='Cart Test Masterclass',
-            short_description='Cart Test Description',
+            name='Test Masterclass',
+            short_description='Test Description',
             start_price=100.00,
             final_price=90.00,
             bucket_link=['img.jpg'],
             age_restriction=18,
             duration=120
         )
-        self.certificate = Certificate.objects.create(
-            user=self.user,
-            amount=1000.00,
-            code='TEST123'
+        
+        # Create test events
+        self.event1 = Event.objects.create(
+            masterclass=self.masterclass,
+            start_datetime=timezone.now() + timedelta(days=1),
+            available_seats=5
         )
+        
+        self.event2 = Event.objects.create(
+            masterclass=self.masterclass,
+            start_datetime=timezone.now() + timedelta(days=2),
+            available_seats=3
+        )
+        
+        # Create another masterclass and event
+        self.masterclass2 = MasterClass.objects.create(
+            name='Another Masterclass',
+            short_description='Another Description',
+            start_price=200.00,
+            final_price=180.00,
+            bucket_link=['img2.jpg'],
+            age_restriction=18,
+            duration=90
+        )
+        
+        self.event3 = Event.objects.create(
+            masterclass=self.masterclass2,
+            start_datetime=timezone.now() + timedelta(days=3),
+            available_seats=4
+        )
+        
         self.cart_url = reverse('cart')
 
-    def test_get_empty_cart(self):
-        response = self.client.get(self.cart_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['items'], [])
-        self.assertEqual(response.data['total_price'], '0.00')
-
-    def test_add_masterclass_to_cart(self):
+    def test_add_event_to_cart(self):
+        """Test adding an event to cart"""
         data = {
-            'type': 'masterclass',
-            'id': self.masterclass.id,
+            'type': 'event',
+            'id': self.event1.id,
             'quantity': 2
         }
         response = self.client.post(self.cart_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['items']), 1)
-        self.assertEqual(response.data['total_price'], '180.00')
+        self.assertEqual(response.data['total_price'], '180.00')  # 90.00 * 2
 
-    def test_add_certificate_to_cart(self):
-        data = {
-            'type': 'certificate',
-            'id': self.certificate.id,
+    def test_one_session_per_masterclass(self):
+        """Test that only one session per masterclass can be in cart"""
+        # Add first event
+        data1 = {
+            'type': 'event',
+            'id': self.event1.id,
+            'quantity': 2
+        }
+        response = self.client.post(self.cart_url, data1, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Try to add second event from same masterclass
+        data2 = {
+            'type': 'event',
+            'id': self.event2.id,
             'quantity': 1
+        }
+        response = self.client.post(self.cart_url, data2, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check that only the second event is in cart
+        response = self.client.get(self.cart_url)
+        self.assertEqual(len(response.data['items']), 1)
+        self.assertEqual(response.data['items'][0]['id'], self.event2.id)
+
+    def test_add_different_masterclass_events(self):
+        """Test adding events from different masterclasses"""
+        # Add first masterclass event
+        data1 = {
+            'type': 'event',
+            'id': self.event1.id,
+            'quantity': 2
+        }
+        response = self.client.post(self.cart_url, data1, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Add second masterclass event
+        data2 = {
+            'type': 'event',
+            'id': self.event3.id,
+            'quantity': 1
+        }
+        response = self.client.post(self.cart_url, data2, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check that both events are in cart
+        response = self.client.get(self.cart_url)
+        self.assertEqual(len(response.data['items']), 2)
+        self.assertEqual(response.data['total_price'], '360.00')  # (90.00 * 2) + (180.00 * 1)
+
+    def test_seat_availability(self):
+        """Test seat availability validation"""
+        data = {
+            'type': 'event',
+            'id': self.event1.id,
+            'quantity': 6  # More than available seats (5)
         }
         response = self.client.post(self.cart_url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['items']), 1)
-        self.assertEqual(response.data['total_price'], '1000.00')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'Not enough seats available')
 
-    def test_update_cart_item(self):
-        # First add an item
+    def test_update_event_quantity(self):
+        """Test updating event quantity in cart"""
+        # First add an event
         data = {
-            'type': 'masterclass',
-            'id': self.masterclass.id,
-            'quantity': 1
+            'type': 'event',
+            'id': self.event1.id,
+            'quantity': 2
         }
         self.client.post(self.cart_url, data, format='json')
-
-        # Then update it
+        
+        # Then update quantity
         update_data = {
-            'type': 'masterclass',
-            'id': self.masterclass.id,
+            'type': 'event',
+            'id': self.event1.id,
             'quantity': 3
         }
         response = self.client.put(self.cart_url, update_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['items']), 1)
-        self.assertEqual(response.data['total_price'], '270.00')
+        self.assertEqual(response.data['total_price'], '270.00')  # 90.00 * 3
 
-    def test_remove_cart_item(self):
-        # First add an item
+    def test_remove_event(self):
+        """Test removing event from cart"""
+        # First add an event
         data = {
-            'type': 'masterclass',
-            'id': self.masterclass.id,
-            'quantity': 1
+            'type': 'event',
+            'id': self.event1.id,
+            'quantity': 2
         }
         self.client.post(self.cart_url, data, format='json')
-
+        
         # Then remove it
         remove_data = {
-            'type': 'masterclass',
-            'id': self.masterclass.id
+            'type': 'event',
+            'id': self.event1.id
         }
         response = self.client.delete(self.cart_url, remove_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -345,39 +422,55 @@ class CartAPITest(TestCase):
         self.assertEqual(response.data['total_price'], '0.00')
 
     def test_clear_cart(self):
-        # First add some items
+        """Test clearing the entire cart"""
+        # Add some events
         data1 = {
-            'type': 'masterclass',
-            'id': self.masterclass.id,
-            'quantity': 1
+            'type': 'event',
+            'id': self.event1.id,
+            'quantity': 2
         }
         data2 = {
-            'type': 'certificate',
-            'id': self.certificate.id,
+            'type': 'event',
+            'id': self.event3.id,
             'quantity': 1
         }
         self.client.post(self.cart_url, data1, format='json')
         self.client.post(self.cart_url, data2, format='json')
-
-        # Then clear the cart
+        
+        # Clear cart
         response = self.client.post(reverse('cart-clear'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['items']), 0)
         self.assertEqual(response.data['total_price'], '0.00')
 
+    def test_invalid_event_id(self):
+        """Test adding non-existent event"""
+        data = {
+            'type': 'event',
+            'id': 99999,  # Non-existent ID
+            'quantity': 1
+        }
+        response = self.client.post(self.cart_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data['error'], 'Event not found')
+
     def test_invalid_item_type(self):
+        """Test adding item with invalid type"""
         data = {
             'type': 'invalid',
-            'id': 1,
+            'id': self.event1.id,
             'quantity': 1
         }
         response = self.client.post(self.cart_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'Invalid item type')
 
     def test_missing_required_fields(self):
+        """Test adding item with missing required fields"""
         data = {
-            'type': 'masterclass'
+            'type': 'event'
             # missing id
         }
         response = self.client.post(self.cart_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'Type and id are required')

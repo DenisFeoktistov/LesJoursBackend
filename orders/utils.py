@@ -1,7 +1,7 @@
 from django.conf import settings
 import json
 from decimal import Decimal
-from masterclasses.models import MasterClass
+from masterclasses.models import MasterClass, Event
 from certificates.models import Certificate
 
 class Cart:
@@ -13,16 +13,43 @@ class Cart:
         self.cart = cart
 
     def add(self, item_type, item_id, quantity=1):
-        item_key = f"{item_type}_{item_id}"
-        if item_key in self.cart:
-            self.cart[item_key]['quantity'] += quantity
+        if item_type == 'event':
+            # For events, we need to check if there's already a session for this masterclass
+            try:
+                event = Event.objects.get(id=item_id)
+                masterclass_id = event.masterclass.id
+                
+                # Check if there's already a session for this masterclass in cart
+                for key, item in self.cart.items():
+                    if item['type'] == 'event':
+                        existing_event = Event.objects.get(id=item['id'])
+                        if existing_event.masterclass.id == masterclass_id:
+                            # Remove existing session for this masterclass
+                            del self.cart[key]
+                            break
+                
+                # Add the new event session
+                item_key = f"{item_type}_{item_id}"
+                self.cart[item_key] = {
+                    'type': item_type,
+                    'id': item_id,
+                    'quantity': quantity
+                }
+            except Event.DoesNotExist:
+                return False
         else:
-            self.cart[item_key] = {
-                'type': item_type,
-                'id': item_id,
-                'quantity': quantity
-            }
+            # For other item types (like certificates), keep existing behavior
+            item_key = f"{item_type}_{item_id}"
+            if item_key in self.cart:
+                self.cart[item_key]['quantity'] += quantity
+            else:
+                self.cart[item_key] = {
+                    'type': item_type,
+                    'id': item_id,
+                    'quantity': quantity
+                }
         self.save()
+        return True
 
     def remove(self, item_type, item_id):
         item_key = f"{item_type}_{item_id}"
@@ -49,11 +76,11 @@ class Cart:
     def get_total_price(self):
         total = Decimal('0.00')
         for item_key, item_data in self.cart.items():
-            if item_data['type'] == 'masterclass':
+            if item_data['type'] == 'event':
                 try:
-                    masterclass = MasterClass.objects.get(id=item_data['id'])
-                    total += masterclass.final_price * item_data['quantity']
-                except MasterClass.DoesNotExist:
+                    event = Event.objects.get(id=item_data['id'])
+                    total += event.masterclass.final_price * item_data['quantity']
+                except Event.DoesNotExist:
                     continue
             elif item_data['type'] == 'certificate':
                 try:
@@ -66,18 +93,20 @@ class Cart:
     def get_items(self):
         items = []
         for item_key, item_data in self.cart.items():
-            if item_data['type'] == 'masterclass':
+            if item_data['type'] == 'event':
                 try:
-                    masterclass = MasterClass.objects.get(id=item_data['id'])
+                    event = Event.objects.get(id=item_data['id'])
                     items.append({
-                        'type': 'masterclass',
-                        'id': masterclass.id,
-                        'name': masterclass.name,
-                        'price': masterclass.final_price,
+                        'type': 'event',
+                        'id': event.id,
+                        'masterclass_id': event.masterclass.id,
+                        'name': event.masterclass.name,
+                        'date': event.start_datetime,
+                        'price': event.masterclass.final_price,
                         'quantity': item_data['quantity'],
-                        'total': masterclass.final_price * item_data['quantity']
+                        'total': event.masterclass.final_price * item_data['quantity']
                     })
-                except MasterClass.DoesNotExist:
+                except Event.DoesNotExist:
                     continue
             elif item_data['type'] == 'certificate':
                 try:

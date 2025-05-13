@@ -8,6 +8,7 @@ from ..models import Order, OrderItem
 from ..utils import Cart
 from rest_framework.views import APIView
 from django.conf import settings
+from masterclasses.models import Event
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -220,36 +221,75 @@ class CartView(APIView):
                 'items': [],
                 'total_price': '0.00'
             })
+        
         cart = Cart(request)
         item_type = request.data.get('type')
         item_id = request.data.get('id')
         quantity = int(request.data.get('quantity', 1))
+        
         if not item_type or not item_id:
             return Response(
                 {'error': 'Type and id are required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        if item_type not in ['masterclass', 'certificate']:
+            
+        if item_type not in ['event', 'certificate']:
             return Response(
                 {'error': 'Invalid item type'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        cart.add(item_type, item_id, quantity)
-        return Response({
-            'items': cart.get_items(),
-            'total_price': str(cart.get_total_price())
-        })
+            
+        if item_type == 'event':
+            try:
+                event = Event.objects.get(id=item_id)
+                if event.get_remaining_seats() < quantity:
+                    return Response(
+                        {'error': 'Not enough seats available'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except Event.DoesNotExist:
+                return Response(
+                    {'error': 'Event not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        if cart.add(item_type, item_id, quantity):
+            return Response({
+                'items': cart.get_items(),
+                'total_price': str(cart.get_total_price())
+            })
+        else:
+            return Response(
+                {'error': 'Failed to add item to cart'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     def put(self, request):
         cart = Cart(request)
         item_type = request.data.get('type')
         item_id = request.data.get('id')
         quantity = int(request.data.get('quantity', 0))
+        
         if not item_type or not item_id:
             return Response(
                 {'error': 'Type and id are required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+            
+        if item_type == 'event':
+            try:
+                event = Event.objects.get(id=item_id)
+                if event.get_remaining_seats() < quantity:
+                    return Response(
+                        {'error': 'Not enough seats available'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except Event.DoesNotExist:
+                return Response(
+                    {'error': 'Event not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
         cart.update(item_type, item_id, quantity)
         return Response({
             'items': cart.get_items(),
@@ -260,11 +300,13 @@ class CartView(APIView):
         cart = Cart(request)
         item_type = request.data.get('type')
         item_id = request.data.get('id')
+        
         if not item_type or not item_id:
             return Response(
                 {'error': 'Type and id are required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+            
         cart.remove(item_type, item_id)
         return Response({
             'items': cart.get_items(),
