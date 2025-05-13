@@ -5,9 +5,11 @@ from django.utils.text import slugify
 
 
 class EventSerializer(serializers.ModelSerializer):
+    occupied_seats = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Event
-        fields = ['id', 'masterclass', 'start_datetime', 'end_datetime', 'available_seats', 'created_at']
+        fields = ['id', 'masterclass', 'start_datetime', 'end_datetime', 'available_seats', 'created_at', 'occupied_seats']
         read_only_fields = ['created_at', 'end_datetime']
 
 
@@ -38,6 +40,7 @@ class MasterClassSerializer(serializers.ModelSerializer):
         validators=[UniqueValidator(queryset=MasterClass.objects.all())],
     )
     score_product_page = serializers.IntegerField(read_only=True)
+    occupied_seats = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = MasterClass
@@ -45,7 +48,7 @@ class MasterClassSerializer(serializers.ModelSerializer):
             'id', 'name', 'slug', 'short_description', 'long_description',
             'bucket_link', 'age_restriction', 'duration',
             'created_at', 'updated_at', 'events', 'location', 'price',
-            'in_wishlist', 'parameters', 'details', 'score_product_page'
+            'in_wishlist', 'parameters', 'details', 'score_product_page', 'occupied_seats'
         ]
         read_only_fields = ['slug', 'created_at', 'updated_at', 'in_wishlist']
 
