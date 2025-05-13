@@ -17,7 +17,13 @@ class MasterClassViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = MasterClassFilter
     search_fields = ['name', 'short_description', 'long_description']
-    ordering_fields = ['start_price', 'final_price', 'created_at', 'name']
+    ordering_fields = [
+        'final_price',  # For price sorting
+        'age_restriction',  # For age sorting
+        'score_product_page',  # For popularity sorting
+        'created_at',  # For sorting by creation date
+        'name'  # Keep existing name sorting
+    ]
     permission_classes = [permissions.AllowAny]
 
     def get_serializer_context(self):

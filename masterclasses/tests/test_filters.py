@@ -3,6 +3,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 from ..models import MasterClass
+from django.utils import timezone
 
 
 class MasterClassFilterTest(TestCase):
@@ -16,7 +17,9 @@ class MasterClassFilterTest(TestCase):
             start_price=1000.00,
             final_price=800.00,  # Has discount
             age_restriction=6,
-            duration=60
+            duration=60,
+            score_product_page=50,
+            created_at=timezone.now() - timezone.timedelta(days=2)
         )
         
         self.masterclass2 = MasterClass.objects.create(
@@ -25,7 +28,9 @@ class MasterClassFilterTest(TestCase):
             start_price=2000.00,
             final_price=2000.00,  # No discount
             age_restriction=12,
-            duration=90
+            duration=90,
+            score_product_page=80,
+            created_at=timezone.now() - timezone.timedelta(days=1)
         )
         
         self.masterclass3 = MasterClass.objects.create(
@@ -34,7 +39,9 @@ class MasterClassFilterTest(TestCase):
             start_price=3000.00,
             final_price=2500.00,  # Has discount
             age_restriction=16,
-            duration=120
+            duration=120,
+            score_product_page=30,
+            created_at=timezone.now()
         )
         
         self.url = reverse('masterclass-list')
@@ -111,4 +118,59 @@ class MasterClassFilterTest(TestCase):
         # Test invalid has_discount value (ожидаем 200 и все объекты)
         response = self.client.get(f'{self.url}?has_discount=invalid')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 3) 
+        self.assertEqual(len(response.data['results']), 3)
+
+    def test_sort_by_price_descending(self):
+        response = self.client.get(f'{self.url}?ordering=-final_price')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[0]['id'], self.masterclass3.id)  # Highest price
+        self.assertEqual(results[1]['id'], self.masterclass2.id)
+        self.assertEqual(results[2]['id'], self.masterclass1.id)  # Lowest price
+
+    def test_sort_by_age_ascending(self):
+        response = self.client.get(f'{self.url}?ordering=age_restriction')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[0]['id'], self.masterclass1.id)  # Age 6
+        self.assertEqual(results[1]['id'], self.masterclass2.id)  # Age 12
+        self.assertEqual(results[2]['id'], self.masterclass3.id)  # Age 16
+
+    def test_sort_by_popularity_descending(self):
+        response = self.client.get(f'{self.url}?ordering=-score_product_page')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[0]['id'], self.masterclass2.id)  # Score 80
+        self.assertEqual(results[1]['id'], self.masterclass1.id)  # Score 50
+        self.assertEqual(results[2]['id'], self.masterclass3.id)  # Score 30
+
+    def test_sort_by_creation_date_descending(self):
+        response = self.client.get(f'{self.url}?ordering=-created_at')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[0]['id'], self.masterclass3.id)  # Most recent
+        self.assertEqual(results[1]['id'], self.masterclass2.id)
+        self.assertEqual(results[2]['id'], self.masterclass1.id)  # Oldest
+
+    def test_sort_by_multiple_fields(self):
+        # Sort by price descending and then by age ascending
+        response = self.client.get(f'{self.url}?ordering=-final_price,age_restriction')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        self.assertEqual(len(results), 3)
+        # First sort by price (descending)
+        self.assertEqual(results[0]['id'], self.masterclass3.id)  # Highest price
+        self.assertEqual(results[1]['id'], self.masterclass2.id)
+        self.assertEqual(results[2]['id'], self.masterclass1.id)  # Lowest price
+
+    def test_invalid_sort_field(self):
+        response = self.client.get(f'{self.url}?ordering=invalid_field')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should return results in default order (by created_at descending)
+        results = response.data['results']
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[0]['id'], self.masterclass3.id)  # Most recent 
