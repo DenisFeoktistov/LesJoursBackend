@@ -20,6 +20,10 @@ class Cart:
                 event = Event.objects.get(id=item_id)
                 masterclass_id = event.masterclass.id
                 
+                # Check seat availability
+                if event.get_remaining_seats() < quantity:
+                    return False
+                
                 # Check if there's already a session for this masterclass in cart
                 for key, item in self.cart.items():
                     if item['type'] == 'event':
@@ -40,14 +44,14 @@ class Cart:
             except Event.DoesNotExist:
                 return False
         else:
-            # For certificates, do not create Certificate in DB for anonymous users
+            # For certificates, use the amount as the ID for anonymous users
             item_key = f"{item_type}_{item_id}"
             if item_key in self.cart:
                 self.cart[item_key]['quantity'] += quantity
             else:
                 self.cart[item_key] = {
                     'type': item_type,
-                    'id': item_id,
+                    'id': item_id,  # This will be the amount for anonymous users
                     'quantity': quantity,
                     'user': user.id if user else None
                 }
@@ -175,11 +179,11 @@ class Cart:
                         certificate = Certificate.objects.get(id=item_data['id'])
                         items.append({
                             'type': 'certificate',
-                            'amount': str(int(certificate.amount)),
+                            'amount': str(certificate.amount),
                             'quantity': item_data['quantity']
                         })
                     else:
-                        # Для анонимных — просто amount
+                        # For anonymous users, use the ID as the amount
                         items.append({
                             'type': 'certificate',
                             'amount': str(item_data['id']),

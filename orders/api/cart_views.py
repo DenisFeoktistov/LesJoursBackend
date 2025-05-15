@@ -29,20 +29,69 @@ class CartView(APIView):
         try:
             user = get_object_or_404(User, id=user_id)
             cart = Cart(request)
-            
-            if request.query_params.get('is_certificate'):
-                # Handle certificate
-                amount = product_unit_id  # In this case, product_unit_id is actually the amount
+            data = request.data
+            item_type = data.get('type')
+            item_id = data.get('id')
+            quantity = int(data.get('quantity', 1))
+
+            if not item_type or not item_id:
+                return Response({'error': 'Type and id are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if item_type not in ['event', 'certificate']:
+                return Response({'error': 'Invalid item type'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if item_type == 'event':
+                try:
+                    event = Event.objects.get(id=item_id)
+                    # Check total seats including those already in cart
+                    cart_quantity = 0
+                    for item in cart.cart.values():
+                        if item['type'] == 'event' and str(item['id']) == str(item_id):
+                            cart_quantity += item.get('quantity', 0)
+                    if event.get_remaining_seats() < cart_quantity + quantity:
+                        return Response({'error': 'Not enough seats available'}, status=status.HTTP_400_BAD_REQUEST)
+                except Event.DoesNotExist:
+                    return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+                cart.add('event', item_id, quantity)
+            elif item_type == 'certificate':
+                amount = data.get('amount', item_id)
                 if request.user.is_authenticated:
                     certificate = Certificate.objects.create(user=request.user, amount=Decimal(amount), code='AUTO')
-                    cart.add('certificate', certificate.id, user=request.user)
+                    cart.add('certificate', certificate.id, quantity, user=request.user)
                 else:
-                    cart.add('certificate', amount)
-            else:
-                # Handle masterclass event
-                event = get_object_or_404(Event, id=product_unit_id)
-                cart.add('event', event.id, int(guests_amount))
-            
+                    cart.add('certificate', amount, quantity)
+            return Response(cart.get_cart_data())
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, user_id):
+        """Update item quantity or promo code in cart"""
+        try:
+            user = get_object_or_404(User, id=user_id)
+            cart = Cart(request)
+            data = request.data
+            if 'promo_code' in data:
+                cart.set_promo_code(data['promo_code'])
+                return Response(cart.get_cart_data())
+            item_type = data.get('type')
+            item_id = data.get('id')
+            quantity = int(data.get('quantity', 0))
+            if not item_type or not item_id:
+                return Response({'error': 'Type and id are required'}, status=status.HTTP_400_BAD_REQUEST)
+            if item_type not in ['event', 'certificate']:
+                return Response({'error': 'Invalid item type'}, status=status.HTTP_400_BAD_REQUEST)
+            if item_type == 'event':
+                try:
+                    event = Event.objects.get(id=item_id)
+                    cart_quantity = 0
+                    for item in cart.cart.values():
+                        if item['type'] == 'event' and str(item['id']) == str(item_id):
+                            cart_quantity += item.get('quantity', 0)
+                    if event.get_remaining_seats() - cart_quantity < quantity:
+                        return Response({'error': 'Not enough seats available'}, status=status.HTTP_400_BAD_REQUEST)
+                except Event.DoesNotExist:
+                    return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+            cart.update(item_type, item_id, quantity)
             return Response(cart.get_cart_data())
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -52,30 +101,19 @@ class CartView(APIView):
         try:
             user = get_object_or_404(User, id=user_id)
             cart = Cart(request)
-            
-            if request.query_params.get('is_certificate'):
-                # Handle certificate removal
-                amount = product_unit_id  # In this case, product_unit_id is actually the amount
-                found = False
-                for item_key, item_data in list(cart.cart.items()):
-                    if item_data['type'] == 'certificate':
-                        if item_data.get('user'):
-                            certificate = Certificate.objects.get(id=item_data['id'])
-                            if str(certificate.amount) == amount:
-                                cart.remove('certificate', certificate.id)
-                                found = True
-                                break
-                        else:
-                            if str(item_data['id']) == amount:
-                                cart.remove('certificate', amount)
-                                found = True
-                                break
-                if not found:
-                    return Response({'error': 'Certificate not found in cart'}, status=status.HTTP_400_BAD_REQUEST)
+            data = request.data
+            item_type = data.get('type')
+            item_id = data.get('id')
+            if not item_type or not item_id:
+                return Response({'error': 'Type and id are required'}, status=status.HTTP_400_BAD_REQUEST)
+            if item_type == 'certificate':
+                # Для анонимных ищем по amount, для аутентифицированных по id Certificate
+                if request.user.is_authenticated:
+                    cart.remove('certificate', item_id)
+                else:
+                    cart.remove('certificate', item_id)
             else:
-                # Handle masterclass event removal
-                cart.remove('event', product_unit_id)
-            
+                cart.remove(item_type, item_id)
             return Response(cart.get_cart_data())
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

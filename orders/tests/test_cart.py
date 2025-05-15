@@ -55,23 +55,26 @@ class CartAPITestCase(TestCase):
 
     def test_add_to_cart_masterclass(self):
         """Test adding masterclass to cart"""
-        url = reverse('add-to-cart', kwargs={
-            'user_id': self.user.id,
-            'product_unit_id': self.event.id,
-            'guests_amount': 2
-        })
-        response = self.client.post(url)
+        url = reverse('cart', kwargs={'user_id': self.user.id})
+        data = {
+            'type': 'event',
+            'id': self.event.id,
+            'quantity': 2
+        }
+        response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['product_units']), 1)
         self.assertEqual(response.data['product_units'][0]['guestsAmount'], 2)
 
     def test_add_to_cart_certificate(self):
         """Test adding certificate to cart"""
-        url = reverse('add-to-cart-certificate', kwargs={
-            'user_id': self.user.id,
-            'product_unit_id': '5000'
-        }) + '?is_certificate=true'
-        response = self.client.post(url)
+        url = reverse('cart', kwargs={'user_id': self.user.id})
+        data = {
+            'type': 'certificate',
+            'id': '5000',
+            'amount': '5000'
+        }
+        response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['product_units']), 1)
         self.assertEqual(response.data['product_units'][0]['amount'], '5000')
@@ -79,37 +82,40 @@ class CartAPITestCase(TestCase):
     def test_remove_from_cart_masterclass(self):
         """Test removing masterclass from cart"""
         # First add to cart
-        add_url = reverse('add-to-cart', kwargs={
-            'user_id': self.user.id,
-            'product_unit_id': self.event.id,
-            'guests_amount': 2
-        })
-        self.client.post(add_url)
+        add_url = reverse('cart', kwargs={'user_id': self.user.id})
+        add_data = {
+            'type': 'event',
+            'id': self.event.id,
+            'quantity': 2
+        }
+        self.client.post(add_url, add_data)
         
         # Then remove
-        remove_url = reverse('remove-from-cart', kwargs={
-            'user_id': self.user.id,
-            'product_unit_id': self.event.id
-        })
-        response = self.client.delete(remove_url)
+        remove_data = {
+            'type': 'event',
+            'id': self.event.id
+        }
+        response = self.client.delete(add_url, remove_data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['product_units']), 0)
 
     def test_remove_from_cart_certificate(self):
         """Test removing certificate from cart"""
         # First add to cart
-        add_url = reverse('add-to-cart-certificate', kwargs={
-            'user_id': self.user.id,
-            'product_unit_id': '5000'
-        }) + '?is_certificate=true'
-        self.client.post(add_url)
+        add_url = reverse('cart', kwargs={'user_id': self.user.id})
+        add_data = {
+            'type': 'certificate',
+            'id': '5000',
+            'amount': '5000'
+        }
+        self.client.post(add_url, add_data)
         
         # Then remove
-        remove_url = reverse('remove-from-cart', kwargs={
-            'user_id': self.user.id,
-            'product_unit_id': '5000'
-        }) + '?is_certificate=true'
-        response = self.client.delete(remove_url)
+        remove_data = {
+            'type': 'certificate',
+            'id': '5000'
+        }
+        response = self.client.delete(add_url, remove_data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['product_units']), 0)
 

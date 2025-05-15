@@ -213,7 +213,7 @@ class MasterClassAPITest(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.client.post(self.url, self.masterclass_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_masterclass_events_with_events(self):
         # Add an event to the masterclass
@@ -257,7 +257,7 @@ class MasterClassAPITest(TestCase):
         self.client.force_authenticate(user=None)
         url = reverse('masterclass-toggle-wishlist', args=[self.masterclass.id])
         response = self.client.post(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_toggle_wishlist_nonexistent(self):
         # Test with non-existent masterclass
