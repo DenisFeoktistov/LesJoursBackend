@@ -10,6 +10,10 @@ from .serializers import UserSerializer, UserProfileSerializer, RegistrationSeri
 from .permissions import IsProfileOwner
 from ..models import UserProfile
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from datetime import datetime
+from masterclasses.models import MasterClass
+from masterclasses.api.serializers import MasterClassSerializer
 
 User = get_user_model()
 
@@ -317,4 +321,127 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         user = self.get_object()
         favorites = user.profile.favorite_masterclasses.all()
         serializer = MasterClassSerializer(favorites, many=True)
-        return Response(serializer.data) 
+        return Response(serializer.data)
+
+class TokenRefreshView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        try:
+            refresh_token = request.data.get('refresh')
+            if not refresh_token:
+                return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            token = RefreshToken(refresh_token)
+            access_token = str(token.access_token)
+            
+            return Response({
+                'access': access_token
+            })
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class UserInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, id):
+        try:
+            user = User.objects.get(id=id)
+            profile = user.profile
+            
+            return Response({
+                'id': user.id,
+                'formatted_happy_birthday_date': profile.birth_date.strftime('%d.%m.%Y') if profile.birth_date else None,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'gender': {
+                    'id': 1 if profile.gender == 'M' else 2,
+                    'name': profile.gender
+                }
+            })
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    def post(self, request, id):
+        try:
+            user = User.objects.get(id=id)
+            profile = user.profile
+            
+            # Update user fields
+            user.first_name = request.data.get('first_name', user.first_name)
+            user.last_name = request.data.get('last_name', user.last_name)
+            user.email = request.data.get('email', user.email)
+            user.username = request.data.get('username', user.username)
+            
+            # Update profile fields
+            profile.gender = request.data.get('gender', profile.gender)
+            
+            if 'date' in request.data:
+                try:
+                    profile.birth_date = datetime.strptime(request.data['date'], '%d.%m.%Y').date()
+                except ValueError:
+                    return Response({'error': 'Invalid date format'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user.save()
+            profile.save()
+            
+            return Response({'message': 'User info updated successfully'})
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class UserLastSeenView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, id):
+        try:
+            user = User.objects.get(id=id)
+            last_seen = user.profile.last_seen_masterclasses.all()
+            serializer = MasterClassSerializer(last_seen, many=True)
+            return Response(serializer.data)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    def post(self, request, id):
+        try:
+            user = User.objects.get(id=id)
+            product_id = request.data.get('product_id')
+            
+            if not product_id:
+                return Response({'error': 'Product ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                masterclass = MasterClass.objects.get(id=product_id)
+            except MasterClass.DoesNotExist:
+                return Response({'error': 'Masterclass not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Add to last seen
+            user.profile.last_seen_masterclasses.add(masterclass)
+            
+            return Response({'message': 'Masterclass added to last seen'})
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, id):
+        try:
+            user = User.objects.get(id=id)
+            old_password = request.data.get('old_password')
+            new_password = request.data.get('new_password')
+            
+            if not old_password or not new_password:
+                return Response({'error': 'Both old and new passwords are required'}, 
+                              status=status.HTTP_400_BAD_REQUEST)
+            
+            if not user.check_password(old_password):
+                return Response({'error': 'Invalid old password'}, 
+                              status=status.HTTP_400_BAD_REQUEST)
+            
+            user.set_password(new_password)
+            user.save()
+            
+            return Response({'message': 'Password changed successfully'})
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND) 

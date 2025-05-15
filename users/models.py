@@ -25,6 +25,7 @@ class UserProfile(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     birth_date = models.DateField(null=True, blank=True)
     favorite_masterclasses = models.ManyToManyField('masterclasses.MasterClass', blank=True)
+    last_seen_masterclasses = models.ManyToManyField('masterclasses.MasterClass', related_name='last_seen_by', blank=True)
     cart = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
