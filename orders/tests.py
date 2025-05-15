@@ -273,19 +273,26 @@ class CartTest(TestCase):
             final_price=90.00,
             bucket_link=['img.jpg'],
             age_restriction=18,
-            duration=120
+            duration=120,
+            slug='test-masterclass',
+            parameters={
+                'Адрес': ['Test Address'],
+                'Контакты': ['+7 (999) 999-99-99']
+            }
         )
         
         # Create test events
         self.event1 = Event.objects.create(
             masterclass=self.masterclass,
             start_datetime=timezone.now() + timedelta(days=1),
+            end_datetime=timezone.now() + timedelta(days=1, hours=2),
             available_seats=5
         )
         
         self.event2 = Event.objects.create(
             masterclass=self.masterclass,
             start_datetime=timezone.now() + timedelta(days=2),
+            end_datetime=timezone.now() + timedelta(days=2, hours=2),
             available_seats=3
         )
         
@@ -297,13 +304,25 @@ class CartTest(TestCase):
             final_price=180.00,
             bucket_link=['img2.jpg'],
             age_restriction=18,
-            duration=90
+            duration=90,
+            slug='another-masterclass',
+            parameters={
+                'Адрес': ['Test Address 2'],
+                'Контакты': ['+7 (999) 999-99-98']
+            }
         )
         
         self.event3 = Event.objects.create(
             masterclass=self.masterclass2,
             start_datetime=timezone.now() + timedelta(days=3),
+            end_datetime=timezone.now() + timedelta(days=3, hours=1.5),
             available_seats=4
+        )
+        
+        # Create test certificate
+        self.certificate = Certificate.objects.create(
+            amount=5000,
+            user=self.user
         )
         
         self.cart_url = reverse('cart')
@@ -317,8 +336,27 @@ class CartTest(TestCase):
         }
         response = self.client.post(self.cart_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['items']), 1)
-        self.assertEqual(response.data['total_price'], '180.00')  # 90.00 * 2
+        
+        # Check response structure
+        self.assertIn('product_units', response.data)
+        self.assertEqual(len(response.data['product_units']), 1)
+        
+        # Check event data
+        event_data = response.data['product_units'][0]
+        self.assertEqual(event_data['name'], self.masterclass.name)
+        self.assertEqual(event_data['guestsAmount'], 2)
+        self.assertEqual(event_data['totalPrice'], 180.00)  # 90.00 * 2
+        self.assertEqual(event_data['type'], 'master_class')
+        self.assertTrue(event_data['availability'])
+        self.assertEqual(event_data['address'], self.masterclass.parameters['Адрес'][0])
+        self.assertEqual(event_data['contacts'], self.masterclass.parameters['Контакты'][0])
+        
+        # Check totals
+        self.assertEqual(response.data['total_amount'], 200.00)  # 100.00 * 2
+        self.assertEqual(response.data['sale'], 20.00)  # (100.00 - 90.00) * 2
+        self.assertEqual(response.data['promo_sale'], 0.00)
+        self.assertEqual(response.data['total_sale'], 20.00)
+        self.assertEqual(response.data['final_amount'], 180.00)
 
     def test_one_session_per_masterclass(self):
         """Test that only one session per masterclass can be in cart"""
@@ -342,8 +380,8 @@ class CartTest(TestCase):
         
         # Check that only the second event is in cart
         response = self.client.get(self.cart_url)
-        self.assertEqual(len(response.data['items']), 1)
-        self.assertEqual(response.data['items'][0]['id'], self.event2.id)
+        self.assertEqual(len(response.data['product_units']), 1)
+        self.assertEqual(response.data['product_units'][0]['date']['id'], self.event2.id)
 
     def test_add_different_masterclass_events(self):
         """Test adding events from different masterclasses"""
@@ -367,8 +405,54 @@ class CartTest(TestCase):
         
         # Check that both events are in cart
         response = self.client.get(self.cart_url)
-        self.assertEqual(len(response.data['items']), 2)
-        self.assertEqual(response.data['total_price'], '360.00')  # (90.00 * 2) + (180.00 * 1)
+        self.assertEqual(len(response.data['product_units']), 2)
+        self.assertEqual(response.data['total_amount'], 400.00)  # (100.00 * 2) + (200.00 * 1)
+        self.assertEqual(response.data['sale'], 40.00)  # (100.00 - 90.00) * 2 + (200.00 - 180.00) * 1
+        self.assertEqual(response.data['final_amount'], 360.00)
+
+    def test_add_certificate(self):
+        """Test adding a certificate to cart"""
+        data = {
+            'type': 'certificate',
+            'id': self.certificate.id,
+            'quantity': 1
+        }
+        response = self.client.post(self.cart_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check response structure
+        self.assertIn('product_units', response.data)
+        self.assertEqual(len(response.data['product_units']), 1)
+        
+        # Check certificate data
+        certificate_data = response.data['product_units'][0]
+        self.assertEqual(certificate_data['type'], 'certificate')
+        self.assertEqual(certificate_data['amount'], '5000')
+        
+        # Check totals
+        self.assertEqual(response.data['total_amount'], 5000.00)
+        self.assertEqual(response.data['sale'], 0.00)
+        self.assertEqual(response.data['final_amount'], 5000.00)
+
+    def test_promo_code(self):
+        """Test adding and applying promo code"""
+        # First add an event
+        data = {
+            'type': 'event',
+            'id': self.event1.id,
+            'quantity': 2
+        }
+        self.client.post(self.cart_url, data, format='json')
+        
+        # Add promo code
+        promo_data = {
+            'promo_code': 'TEST10'
+        }
+        response = self.client.put(self.cart_url, promo_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check promo code in response
+        self.assertEqual(response.data['promo_code']['string_representation'], 'TEST10')
 
     def test_seat_availability(self):
         """Test seat availability validation"""
@@ -399,7 +483,9 @@ class CartTest(TestCase):
         }
         response = self.client.put(self.cart_url, update_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['total_price'], '270.00')  # 90.00 * 3
+        self.assertEqual(response.data['total_amount'], 300.00)  # 100.00 * 3
+        self.assertEqual(response.data['sale'], 30.00)  # (100.00 - 90.00) * 3
+        self.assertEqual(response.data['final_amount'], 270.00)
 
     def test_remove_event(self):
         """Test removing event from cart"""
@@ -418,8 +504,9 @@ class CartTest(TestCase):
         }
         response = self.client.delete(self.cart_url, remove_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['items']), 0)
-        self.assertEqual(response.data['total_price'], '0.00')
+        self.assertEqual(len(response.data['product_units']), 0)
+        self.assertEqual(response.data['total_amount'], 0.00)
+        self.assertEqual(response.data['final_amount'], 0.00)
 
     def test_clear_cart(self):
         """Test clearing the entire cart"""
@@ -440,8 +527,10 @@ class CartTest(TestCase):
         # Clear cart
         response = self.client.post(reverse('cart-clear'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['items']), 0)
-        self.assertEqual(response.data['total_price'], '0.00')
+        self.assertEqual(len(response.data['product_units']), 0)
+        self.assertEqual(response.data['total_amount'], 0.00)
+        self.assertEqual(response.data['final_amount'], 0.00)
+        self.assertIsNone(response.data['promo_code'])
 
     def test_invalid_event_id(self):
         """Test adding non-existent event"""

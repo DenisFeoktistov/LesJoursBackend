@@ -208,19 +208,14 @@ class CartView(APIView):
 
     def get(self, request):
         cart = Cart(request)
-        return Response({
-            'items': cart.get_items(),
-            'total_price': str(cart.get_total_price())
-        })
+        return Response(cart.get_cart_data())
 
     def post(self, request):
         if request.path.endswith('clear/'):
             cart = Cart(request)
             cart.clear()
-            return Response({
-                'items': [],
-                'total_price': '0.00'
-            })
+            cart = Cart(request)
+            return Response(cart.get_cart_data())
         
         cart = Cart(request)
         item_type = request.data.get('type')
@@ -254,10 +249,7 @@ class CartView(APIView):
                 )
         
         if cart.add(item_type, item_id, quantity):
-            return Response({
-                'items': cart.get_items(),
-                'total_price': str(cart.get_total_price())
-            })
+            return Response(cart.get_cart_data())
         else:
             return Response(
                 {'error': 'Failed to add item to cart'},
@@ -266,6 +258,13 @@ class CartView(APIView):
 
     def put(self, request):
         cart = Cart(request)
+        
+        # Handle promo code update
+        if 'promo_code' in request.data:
+            cart.set_promo_code(request.data['promo_code'])
+            return Response(cart.get_cart_data())
+        
+        # Handle item quantity update
         item_type = request.data.get('type')
         item_id = request.data.get('id')
         quantity = int(request.data.get('quantity', 0))
@@ -291,10 +290,7 @@ class CartView(APIView):
                 )
         
         cart.update(item_type, item_id, quantity)
-        return Response({
-            'items': cart.get_items(),
-            'total_price': str(cart.get_total_price())
-        })
+        return Response(cart.get_cart_data())
 
     def delete(self, request):
         cart = Cart(request)
@@ -308,7 +304,4 @@ class CartView(APIView):
             )
             
         cart.remove(item_type, item_id)
-        return Response({
-            'items': cart.get_items(),
-            'total_price': str(cart.get_total_price())
-        }) 
+        return Response(cart.get_cart_data()) 
