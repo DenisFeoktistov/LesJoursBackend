@@ -1,15 +1,55 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import get_user_model
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .serializers import UserSerializer, UserProfileSerializer
+from .serializers import UserSerializer, UserProfileSerializer, RegistrationSerializer
 from .permissions import IsProfileOwner
 from ..models import UserProfile
+from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
+
+class RegistrationView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Register a new user",
+        request_body=RegistrationSerializer,
+        responses={
+            201: openapi.Response(
+                description="User registered successfully",
+                schema=RegistrationSerializer
+            ),
+            400: "Bad Request"
+        }
+    )
+    def post(self, request):
+        try:
+            serializer = RegistrationSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.save()
+            
+            # Generate tokens
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'user_id': user.id,
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'gender': user.profile.gender,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                {'error': 'Account with this email already exists'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
