@@ -3,10 +3,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .serializers import UserSerializer, UserProfileSerializer, RegistrationSerializer
+from .serializers import UserSerializer, UserProfileSerializer, RegistrationSerializer, LoginSerializer
 from .permissions import IsProfileOwner
 from ..models import UserProfile
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -48,6 +48,54 @@ class RegistrationView(APIView):
         except Exception as e:
             return Response(
                 {'error': 'Account with this email already exists'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class LoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Login user",
+        request_body=LoginSerializer,
+        responses={
+            200: openapi.Response(
+                description="User logged in successfully",
+                schema=LoginSerializer
+            ),
+            400: "Bad Request"
+        }
+    )
+    def post(self, request):
+        try:
+            serializer = LoginSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            user = authenticate(
+                username=serializer.validated_data['username'].lower().strip(),
+                password=serializer.validated_data['password']
+            )
+            
+            if user is None:
+                return Response(
+                    {'error': 'Invalid password'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Generate tokens
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'user_id': user.id,
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'gender': user.profile.gender,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            })
+        except Exception as e:
+            return Response(
+                {'error': 'Invalid password'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

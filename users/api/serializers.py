@@ -10,6 +10,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['cart']
 
 
+class LoginSerializer(serializers.Serializer):
+    username = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+
 class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     phone = serializers.CharField(required=True)
