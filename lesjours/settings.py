@@ -58,20 +58,20 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     
     # Third party apps
+    'rest_framework',
+    'rest_framework.authtoken',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    'rest_framework',
-    'django_filters',
-    'crispy_forms',
-    'crispy_bootstrap5',
     'drf_yasg',
+    'django_filters',
     
     # Local apps
-    'users.apps.UsersConfig',
-    'masterclasses.apps.MasterclassesConfig',
-    'orders.apps.OrdersConfig',
-    'certificates.apps.CertificatesConfig',
+    'users',
+    'masterclasses',
+    'orders',
+    'certificates',
+    'product_units',
 ]
 
 MIDDLEWARE = [
