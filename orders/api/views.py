@@ -9,11 +9,18 @@ from ..utils import Cart
 from rest_framework.views import APIView
 from django.conf import settings
 from masterclasses.models import Event
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from rest_framework.authentication import TokenAuthentication
+
+User = get_user_model()
 
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
@@ -117,11 +124,26 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = OrderItemSerializer(items, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['get'])
+    def user_orders(self, request):
+        orders = self.get_queryset()
+        serializer = self.get_serializer(orders, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def info(self, request, pk=None):
+        order = self.get_object()
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)
+
 
 class OrderItemViewSet(viewsets.ModelViewSet):
-    queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
     permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+    def get_queryset(self):
+        return OrderItem.objects.filter(order__user=self.request.user)
 
     @swagger_auto_schema(
         operation_description="List all order items",
@@ -147,7 +169,13 @@ class OrderItemViewSet(viewsets.ModelViewSet):
         }
     )
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        order_id = self.request.data.get('order')
+        if not Order.objects.filter(id=order_id, user=self.request.user).exists():
+            raise ValidationError("Order does not exist or does not belong to the user")
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
         operation_description="Get a specific order item",
@@ -304,4 +332,39 @@ class CartView(APIView):
             )
             
         cart.remove(item_type, item_id)
-        return Response(cart.get_cart_data()) 
+        return Response(cart.get_cart_data())
+
+
+class UserPasswordViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+    @action(detail=False, methods=['post'])
+    def change_password(self, request):
+        old_password = request.data.get('oldPass')
+        new_password = request.data.get('newPass')
+
+        if not old_password or not new_password:
+            return Response(
+                {'error': 'Both old and new passwords are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = request.user
+        if not user.check_password(old_password):
+            return Response(
+                {'error': 'Invalid old password'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            validate_password(new_password, user)
+        except ValidationError as e:
+            return Response(
+                {'error': list(e.messages)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.set_password(new_password)
+        user.save()
+        return Response({'message': 'Password successfully changed'}) 

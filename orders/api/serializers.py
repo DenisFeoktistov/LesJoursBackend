@@ -1,26 +1,124 @@
 from rest_framework import serializers
 from ..models import Order, OrderItem
-from masterclasses.api.serializers import MasterClassSerializer
+from masterclasses.models import MasterClass
+from certificates.models import Certificate
+from django.utils import timezone
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    masterclass = MasterClassSerializer(read_only=True)
-    masterclass_id = serializers.IntegerField(write_only=True)
+    name = serializers.CharField(source='masterclass.name', read_only=True)
+    bucket_link = serializers.ListField(source='masterclass.bucket_link', read_only=True)
+    slug = serializers.CharField(source='masterclass.slug', read_only=True)
+    price = serializers.SerializerMethodField(read_only=True)
+    guestsAmount = serializers.IntegerField(source='quantity', read_only=True)
+    totalPrice = serializers.SerializerMethodField(read_only=True)
+    date = serializers.SerializerMethodField(read_only=True)
+    address = serializers.CharField(source='masterclass.location', read_only=True)
+    contacts = serializers.SerializerMethodField(read_only=True)
+    type = serializers.SerializerMethodField(read_only=True)
+    masterclass_id = serializers.PrimaryKeyRelatedField(
+        queryset=MasterClass.objects.all(), source='masterclass', write_only=True, required=False
+    )
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'order', 'masterclass', 'masterclass_id', 'quantity', 'price']
-        read_only_fields = ['price']
+        fields = [
+            'id', 'order', 'masterclass', 'masterclass_id', 'name', 'bucket_link', 'slug', 'price',
+            'guestsAmount', 'totalPrice', 'date', 'address', 'contacts', 'type', 'quantity', 'price'
+        ]
+        extra_kwargs = {
+            'order': {'write_only': True, 'required': True},
+            'masterclass': {'read_only': True},
+            'quantity': {'required': True},
+            'price': {'required': False},
+        }
+
+    def create(self, validated_data):
+        return OrderItem.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        instance.quantity = validated_data.get('quantity', instance.quantity)
+        instance.price = validated_data.get('price', instance.price)
+        instance.save()
+        return instance
+
+    def get_price(self, obj):
+        return {
+            'start_price': float(obj.masterclass.start_price),
+            'final_price': float(obj.price)
+        }
+
+    def get_totalPrice(self, obj):
+        return float(obj.price * obj.quantity)
+
+    def get_date(self, obj):
+        event = obj.masterclass.events.first()
+        if event:
+            return {
+                'start_datetime': event.start_datetime.isoformat(),
+                'end_datetime': event.end_datetime.isoformat()
+            }
+        return None
+
+    def get_contacts(self, obj):
+        return obj.masterclass.parameters.get('contacts', '')
+
+    def get_type(self, obj):
+        return 'master_class'
+
+
+class CertificateOrderItemSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+    amount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderItem
+        fields = ['type', 'amount']
+
+    def get_type(self, obj):
+        return 'certificate'
+
+    def get_amount(self, obj):
+        return str(obj.price)
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, read_only=True)
-    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    order_units = serializers.SerializerMethodField()
+    formatted_date = serializers.SerializerMethodField()
+    number = serializers.SerializerMethodField()
+    total_amount = serializers.SerializerMethodField()
+    final_amount = serializers.SerializerMethodField()
+    total_sale = serializers.SerializerMethodField()
+    status = serializers.CharField(read_only=False, required=False)
 
     class Meta:
         model = Order
-        fields = ['id', 'user', 'items', 'status', 'total_price', 'created_at', 'updated_at']
-        read_only_fields = ['user', 'total_price', 'created_at', 'updated_at']
+        fields = ['id', 'order_units', 'formatted_date', 'number', 
+                 'total_amount', 'final_amount', 'total_sale', 'status']
+
+    def get_order_units(self, obj):
+        items = []
+        for item in obj.items.all():
+            if hasattr(item.masterclass, 'is_certificate') and item.masterclass.is_certificate:
+                items.append(CertificateOrderItemSerializer(item).data)
+            else:
+                items.append(OrderItemSerializer(item).data)
+        return items
+
+    def get_formatted_date(self, obj):
+        return obj.created_at.strftime('%d.%m.%y')
+
+    def get_number(self, obj):
+        return f"{obj.id:06d}"
+
+    def get_total_amount(self, obj):
+        return float(sum(item.masterclass.final_price * item.quantity for item in obj.items.all()))
+
+    def get_final_amount(self, obj):
+        return float(obj.total_price)
+
+    def get_total_sale(self, obj):
+        return float(self.get_total_amount(obj) - self.get_final_amount(obj))
 
     def validate_items(self, value):
         """
@@ -44,4 +142,14 @@ class OrderSerializer(serializers.ModelSerializer):
             if not isinstance(item['quantity'], int) or item['quantity'] <= 0:
                 raise serializers.ValidationError("Quantity must be a positive integer")
 
-        return value 
+        return value
+
+    def update(self, instance, validated_data):
+        status = validated_data.get('status', None)
+        if status == 'paid':
+            instance.mark_as_paid()
+        else:
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+        return instance 

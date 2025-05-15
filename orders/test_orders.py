@@ -551,3 +551,141 @@ class CartTest(TestCase):
         response = self.client.post(self.cart_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['error'], 'Type and id are required')
+
+class UserOrdersAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='ordersuser',
+            email='ordersuser@example.com',
+            password='testpass123'
+        )
+        self.client.force_authenticate(user=self.user)
+        self.masterclass = MasterClass.objects.create(
+            name='User Orders Test Masterclass',
+            short_description='Test Description',
+            start_price=100.00,
+            final_price=90.00,
+            bucket_link=['img.jpg'],
+            age_restriction=18,
+            duration=120
+        )
+        self.order = Order.objects.create(user=self.user)
+        self.order_item = OrderItem.objects.create(
+            order=self.order,
+            masterclass=self.masterclass,
+            quantity=2,
+            price=90.00
+        )
+        self.user_orders_url = reverse('order-user-orders')
+
+    def test_fetch_user_orders(self):
+        response = self.client.get(self.user_orders_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data, list)
+        self.assertEqual(len(response.data), 1)
+        order_data = response.data[0]
+        self.assertEqual(order_data['id'], self.order.id)
+        self.assertEqual(len(order_data['order_units']), 1)
+        self.assertEqual(order_data['total_amount'], 180.00)  # 90.00 * 2
+
+    def test_fetch_user_orders_unauthorized(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(self.user_orders_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class OrderInfoAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='orderinfouser',
+            email='orderinfouser@example.com',
+            password='testpass123'
+        )
+        self.client.force_authenticate(user=self.user)
+        self.masterclass = MasterClass.objects.create(
+            name='Order Info Test Masterclass',
+            short_description='Test Description',
+            start_price=100.00,
+            final_price=90.00,
+            bucket_link=['img.jpg'],
+            age_restriction=18,
+            duration=120
+        )
+        self.order = Order.objects.create(user=self.user)
+        self.order_item = OrderItem.objects.create(
+            order=self.order,
+            masterclass=self.masterclass,
+            quantity=2,
+            price=90.00
+        )
+        self.order_info_url = reverse('order-info', args=[self.order.id])
+
+    def test_fetch_one_order(self):
+        response = self.client.get(self.order_info_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], self.order.id)
+        self.assertEqual(len(response.data['order_units']), 1)
+        self.assertEqual(response.data['total_amount'], 180.00)  # 90.00 * 2
+
+    def test_fetch_one_order_unauthorized(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(self.order_info_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_fetch_one_order_wrong_user(self):
+        other_user = User.objects.create_user(
+            username='otheruser',
+            email='otheruser@example.com',
+            password='testpass123'
+        )
+        self.client.force_authenticate(user=other_user)
+        response = self.client.get(self.order_info_url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+class UserPasswordAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='passworduser',
+            email='passworduser@example.com',
+            password='oldpass123'
+        )
+        self.client.force_authenticate(user=self.user)
+        self.change_password_url = reverse('user-change-password')
+
+    def test_change_password_success(self):
+        data = {
+            'oldPass': 'oldpass123',
+            'newPass': 'newpass123'
+        }
+        response = self.client.post(self.change_password_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('newpass123'))
+
+    def test_change_password_wrong_old_password(self):
+        data = {
+            'oldPass': 'wrongpass',
+            'newPass': 'newpass123'
+        }
+        response = self.client.post(self.change_password_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('oldpass123'))
+
+    def test_change_password_missing_fields(self):
+        data = {
+            'oldPass': 'oldpass123'
+        }
+        response = self.client.post(self.change_password_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_change_password_unauthorized(self):
+        self.client.force_authenticate(user=None)
+        data = {
+            'oldPass': 'oldpass123',
+            'newPass': 'newpass123'
+        }
+        response = self.client.post(self.change_password_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
