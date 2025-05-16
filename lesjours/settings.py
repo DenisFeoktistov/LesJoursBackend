@@ -34,7 +34,14 @@ DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['*']
 # ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
-CSRF_TRUSTED_ORIGINS = ['*']
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://localhost:3000',
+    'http://127.0.0.1:8000',
+    'http://127.0.0.1:3000',
+    'https://les-jours.ru',
+    'http://les-jours.ru',
+]
 # CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['http://localhost:8000', 'http://localhost:8080', 'http://localhost:3000', 'http://les-jours.ru', 'https://les-jours.ru'])
 
 # CORS settings
@@ -65,12 +72,10 @@ CORS_ALLOW_HEADERS = [
     'origin',
     'user-agent',
     'x-csrftoken',
-    'x-requested-with',
-    'Access-Control-Allow-Origin'
+    'x-requested-with'
 ]
-CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken', 'Access-Control-Allow-Origin']
+CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
 CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
-CORS_REPLACE_HTTPS_REFERER = True
 
 
 INSTALLED_APPS = [
