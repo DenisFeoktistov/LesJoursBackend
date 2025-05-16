@@ -41,6 +41,10 @@ class MasterClass(models.Model):
                 counter += 1
             self.slug = slug
         super().save(*args, **kwargs)
+        # Update slug with ID after saving
+        if not self.slug.endswith(f"-{self.id}"):
+            self.slug = f"{self.slug}-{self.id}"
+            super().save(update_fields=['slug'])
 
     def __str__(self):
         return self.name

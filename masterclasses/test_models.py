@@ -34,7 +34,7 @@ class MasterClassModelTest(TestCase):
 
     def test_masterclass_creation(self):
         self.assertEqual(self.masterclass.name, 'Test Masterclass')
-        self.assertEqual(self.masterclass.slug, 'test-masterclass')
+        self.assertEqual(self.masterclass.slug, f'test-masterclass-{self.masterclass.id}')
         self.assertEqual(self.masterclass.short_description, 'Test Description')
         self.assertEqual(self.masterclass.long_description, 'Test Long Description')
         self.assertEqual(self.masterclass.start_price, 100.00)
@@ -55,7 +55,7 @@ class MasterClassModelTest(TestCase):
             start_price=200.00,
             final_price=180.00
         )
-        self.assertEqual(masterclass2.slug, 'another-test-masterclass')
+        self.assertEqual(masterclass2.slug, f'another-test-masterclass-{masterclass2.id}')
 
 
 class EventModelTest(TestCase):

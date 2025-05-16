@@ -25,6 +25,7 @@ class MasterClassViewSet(viewsets.ModelViewSet):
         'name'  # Keep existing name sorting
     ]
     permission_classes = [permissions.AllowAny]
+    lookup_field = 'slug'
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -35,6 +36,11 @@ class MasterClassViewSet(viewsets.ModelViewSet):
         if getattr(self, 'swagger_fake_view', False):
             return MasterClass.objects.none()
         return super().get_queryset()
+
+    def get_object(self):
+        obj = get_object_or_404(self.get_queryset(), slug=self.kwargs["slug"])
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     @swagger_auto_schema(
         operation_description="List all masterclasses",
@@ -126,7 +132,7 @@ class MasterClassViewSet(viewsets.ModelViewSet):
         }
     )
     @action(detail=True, methods=['get'])
-    def events(self, request, pk=None):
+    def events(self, request, slug=None):
         masterclass = self.get_object()
         events = masterclass.events.all()
         serializer = EventSerializer(events, many=True)
@@ -150,7 +156,7 @@ class MasterClassViewSet(viewsets.ModelViewSet):
         }
     )
     @action(detail=True, methods=['post'])
-    def toggle_wishlist(self, request, pk=None):
+    def toggle_wishlist(self, request, slug=None):
         if not request.user.is_authenticated:
             return Response(
                 {'error': 'Authentication required'},
