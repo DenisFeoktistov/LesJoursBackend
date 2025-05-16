@@ -38,30 +38,11 @@ CSRF_TRUSTED_ORIGINS = ['*']
 # CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['http://localhost:8000', 'http://localhost:8080', 'http://localhost:3000', 'http://les-jours.ru', 'https://les-jours.ru'])
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ['*']
 CORS_ALLOW_HEADERS = ['*']
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_ALL_METHODS = True
-CORS_ALLOW_ALL_HEADERS = True
-CORS_EXPOSE_HEADERS = ['*']
-CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 
-# Remove or comment out restrictive CORS settings
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:8000",
-#     "http://localhost:8080",
-#     "http://localhost:3000",
-#     "https://localhost:3000",
-#     "https://les-jours.ru",
-#     "http://les-jours.ru",
-#     "http://158.160.48.56:8080",
-#     "http://158.160.48.56:80",
-#     "*"  # Allow all origins
-# ]
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
