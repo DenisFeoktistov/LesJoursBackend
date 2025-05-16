@@ -33,7 +33,6 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['*']
-# ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://localhost:3000',
@@ -42,7 +41,6 @@ CSRF_TRUSTED_ORIGINS = [
     'https://les-jours.ru',
     'http://les-jours.ru',
 ]
-# CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['http://localhost:8000', 'http://localhost:8080', 'http://localhost:3000', 'http://les-jours.ru', 'https://les-jours.ru'])
 
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True
