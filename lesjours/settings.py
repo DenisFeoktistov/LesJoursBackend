@@ -68,7 +68,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
     'Access-Control-Allow-Origin'
 ]
-CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken', 'Access-Control-Allow-Origin']
 CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 CORS_REPLACE_HTTPS_REFERER = True
 
