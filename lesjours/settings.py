@@ -44,6 +44,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://les-jours.ru",
     "http://158.160.48.56:8080",
     "http://158.160.48.56:80",
+    "*"  # Allow all origins
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -54,6 +55,7 @@ CORS_ALLOW_METHODS = [
     'PATCH',
     'POST',
     'PUT',
+    '*',  # Allow all methods
 ]
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -65,12 +67,14 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    '*',  # Allow all headers
 ]
 
 # Additional CORS settings
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_ALLOW_ALL = True  # Allow all origins
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_METHODS = True
+
 
 # Application definition
 
