@@ -22,7 +22,4 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 8000
 
-# Create a Gunicorn config file
-RUN echo "forwarded_allow_ips = '*'\nforwarded_for_ips = '*'" > /app/gunicorn.conf.py
-
-CMD service nginx start && python manage.py runserver 0.0.0.0:8000
+CMD service nginx start && gunicorn lesjours.wsgi:application --bind 0.0.0.0:8000 --threads 10
