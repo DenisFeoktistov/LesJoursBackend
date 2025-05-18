@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from ..models import UserProfile
 from django.core.validators import RegexValidator
 from rest_framework.validators import UniqueValidator
+import json
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -17,10 +18,35 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def to_internal_value(self, data):
-        # Handle form-urlencoded data
+        import json
+        # Если data — QueryDict с одним ключом, который похож на JSON-строку
+        if isinstance(data, dict) and len(data) == 1:
+            key = next(iter(data.keys()))
+            try:
+                json_data = json.loads(key)
+                if isinstance(json_data, dict):
+                    return super().to_internal_value(json_data)
+            except json.JSONDecodeError:
+                pass
+        # Если data — строка (например, всё тело — JSON-строка)
+        if isinstance(data, str):
+            try:
+                json_data = json.loads(data)
+                if isinstance(json_data, dict):
+                    return super().to_internal_value(json_data)
+            except json.JSONDecodeError:
+                pass
+        # Если data — dict с одним ключом 'data', внутри которого JSON-строка
+        if isinstance(data, dict) and 'data' in data and isinstance(data['data'], str):
+            try:
+                json_data = json.loads(data['data'])
+                if isinstance(json_data, dict):
+                    return super().to_internal_value(json_data)
+            except json.JSONDecodeError:
+                pass
+        # Обычная обработка form-urlencoded
         if isinstance(data, dict) and all(isinstance(v, list) for v in data.values()):
-            # Convert form data format to single values
-            return {k: v[0] if v else None for k, v in data.items()}
+            data = {k: v[0] if v else None for k, v in data.items()}
         return super().to_internal_value(data)
 
 
@@ -41,10 +67,36 @@ class RegistrationSerializer(serializers.ModelSerializer):
         fields = ['username', 'password', 'first_name', 'last_name', 'phone', 'gender', 'is_mailing_list']
 
     def to_internal_value(self, data):
-        # Handle form-urlencoded data
+        print('DEBUG REGISTRATION DATA:', data)
+        import json
+        # Если data — QueryDict с одним ключом, который похож на JSON-строку
+        if isinstance(data, dict) and len(data) == 1:
+            key = next(iter(data.keys()))
+            try:
+                json_data = json.loads(key)
+                if isinstance(json_data, dict):
+                    return super().to_internal_value(json_data)
+            except json.JSONDecodeError:
+                pass
+        # Если data — строка (например, всё тело — JSON-строка)
+        if isinstance(data, str):
+            try:
+                json_data = json.loads(data)
+                if isinstance(json_data, dict):
+                    return super().to_internal_value(json_data)
+            except json.JSONDecodeError:
+                pass
+        # Если data — dict с одним ключом 'data', внутри которого JSON-строка
+        if isinstance(data, dict) and 'data' in data and isinstance(data['data'], str):
+            try:
+                json_data = json.loads(data['data'])
+                if isinstance(json_data, dict):
+                    return super().to_internal_value(json_data)
+            except json.JSONDecodeError:
+                pass
+        # Обычная обработка form-urlencoded
         if isinstance(data, dict) and all(isinstance(v, list) for v in data.values()):
-            # Convert form data format to single values
-            return {k: v[0] if v else None for k, v in data.items()}
+            data = {k: v[0] if v else None for k, v in data.items()}
         return super().to_internal_value(data)
 
     def validate_gender(self, value):
