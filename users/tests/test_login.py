@@ -9,7 +9,7 @@ User = get_user_model()
 class LoginAPITest(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.login_url = reverse('login')
+        self.login_url = '/api/user/login'
         
         # Create test user
         self.user = User.objects.create_user(

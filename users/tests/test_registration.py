@@ -12,7 +12,7 @@ User = get_user_model()
 class RegistrationAPITest(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.register_url = reverse('register')
+        self.register_url = '/api/user/register'
         self.valid_payload = {
             'username': 'test@example.com',
             'password': 'testpass123',

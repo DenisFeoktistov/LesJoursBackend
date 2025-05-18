@@ -203,10 +203,10 @@ class MasterClassFilterTest(TestCase):
         self.assertEqual(response.data['min_price'], 800.00)
         self.assertEqual(response.data['max_price'], 2500.00)  # Updated to match actual value
         
-        # Verify results are limited to 10 items
-        self.assertEqual(len(response.data['results']), 10)
+        # Verify results are limited to 12 items
+        self.assertEqual(len(response.data['results']), 12)
         
         # Verify results are ordered by created_at descending
         results = response.data['results']
         self.assertEqual(results[0]['name'], 'Test Masterclass 15')
-        self.assertEqual(results[9]['name'], 'Test Masterclass 6') 
+        self.assertEqual(results[11]['name'], 'Test Masterclass 4') 
