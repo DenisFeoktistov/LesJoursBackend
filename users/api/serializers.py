@@ -26,13 +26,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         )
     ])
     phone = serializers.CharField(
-        required=True,
-        validators=[
-            RegexValidator(
-                regex=r'^\+?1?\d{9,15}$',
-                message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed."
-            )
-        ]
+        required=True
     )
     gender = serializers.ChoiceField(choices=UserProfile.GENDER_CHOICES, required=True)
     is_mailing_list = serializers.BooleanField(required=True)
