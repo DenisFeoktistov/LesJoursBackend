@@ -369,7 +369,7 @@ class UserInfoView(APIView):
                 'email': user.email,
                 'gender': {
                     'id': 1 if profile.gender == 'M' else 2,
-                    'name': profile.gender
+                    'name': 'male' if profile.gender == 'M' else 'female'
                 }
             })
         except User.DoesNotExist:
