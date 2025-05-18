@@ -11,8 +11,8 @@ router.register(r'profiles', UserProfileViewSet, basename='profile')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('register/', RegistrationView.as_view(), name='register'),
-    path('login/', LoginView.as_view(), name='login'),
+    path('register', RegistrationView.as_view(), name='register'),
+    path('login', LoginView.as_view(), name='login'),
     path('wishlist/<int:id>/', WishlistView.as_view(), name='wishlist'),
     path('wishlist/<int:id>/<int:product_id>/', WishlistView.as_view(), name='wishlist-item'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
