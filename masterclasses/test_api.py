@@ -338,6 +338,85 @@ class MasterClassAPITest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data[0]['in_wishlist'])
 
+    def test_pagination(self):
+        """Test that pagination returns correct number of items per page"""
+        # Create 15 masterclasses
+        for i in range(15):
+            MasterClass.objects.create(
+                name=f'Test Masterclass {i}',
+                short_description=f'Test description {i}',
+                start_price=100.00,
+                final_price=90.00,
+                bucket_link='https://example.com/image.jpg',
+                age_restriction=18,
+                duration=120
+            )
+
+        # Test first page
+        url = reverse('masterclass-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 12)  # Should return 12 items
+        self.assertIn('count', response.data)
+        self.assertIn('next', response.data)
+        self.assertIn('previous', response.data)
+        expected_count = MasterClass.objects.count()
+        self.assertEqual(response.data['count'], expected_count)  # Total count should match
+
+        # Test second page
+        response = self.client.get(f"{url}?page=2")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), expected_count - 12)  # Остаток на второй странице
+        self.assertIsNone(response.data['next'])  # No next page
+        self.assertIsNotNone(response.data['previous'])  # Should have previous page
+
+    def test_pagination_with_filters(self):
+        """Test that pagination works correctly with filters"""
+        # Create masterclasses with different prices
+        for i in range(15):
+            MasterClass.objects.create(
+                name=f'Test Masterclass {i}',
+                short_description=f'Test description {i}',
+                start_price=100.00 + i,
+                final_price=90.00 + i,
+                bucket_link='https://example.com/image.jpg',
+                age_restriction=18,
+                duration=120
+            )
+
+        # Test pagination with price filter
+        url = reverse('masterclass-list')
+        response = self.client.get(f"{url}?final_price_min=95&final_price_max=100")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertLessEqual(len(response.data['results']), 12)  # Should not exceed page size
+        self.assertIn('count', response.data)
+        self.assertIn('min_price', response.data)
+        self.assertIn('max_price', response.data)
+
+    def test_pagination_with_ordering(self):
+        """Test that pagination works correctly with ordering"""
+        # Create masterclasses with different prices
+        for i in range(15):
+            MasterClass.objects.create(
+                name=f'Test Masterclass {i}',
+                short_description=f'Test description {i}',
+                start_price=100.00 + i,
+                final_price=90.00 + i,
+                bucket_link='https://example.com/image.jpg',
+                age_restriction=18,
+                duration=120
+            )
+
+        # Test pagination with ordering
+        url = reverse('masterclass-list')
+        response = self.client.get(f"{url}?ordering=final_price")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 12)  # First page should have 12 items
+        
+        # Verify ordering
+        prices = [item['price']['final_price'] for item in response.data['results']]
+        self.assertEqual(prices, sorted(prices))  # Should be in ascending order
+
 
 class EventAPITest(TestCase):
     def setUp(self):

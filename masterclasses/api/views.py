@@ -27,7 +27,6 @@ class MasterClassViewSet(viewsets.ModelViewSet):
     ]
     permission_classes = [permissions.AllowAny]
     lookup_field = 'slug'
-    pagination_class = None  # Disable default pagination
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -61,8 +60,14 @@ class MasterClassViewSet(viewsets.ModelViewSet):
         min_price = queryset.aggregate(models.Min('final_price'))['final_price__min']
         max_price = queryset.aggregate(models.Max('final_price'))['final_price__max']
         
-        # Limit to 10 items
-        queryset = queryset[:10]
+        # Use pagination
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response = self.get_paginated_response(serializer.data)
+            response.data['min_price'] = min_price
+            response.data['max_price'] = max_price
+            return response
         
         serializer = self.get_serializer(queryset, many=True)
         return Response({
