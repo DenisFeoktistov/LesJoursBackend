@@ -362,22 +362,64 @@ class CustomTokenRefreshView(APIView):
         }
     )
     def post(self, request):
-        try:
-            refresh_token = request.POST.get('refresh') or request.data.get('refresh')
-            
-            if not refresh_token:
-                return Response({'refresh': ['Обязательное поле.']}, status=status.HTTP_400_BAD_REQUEST)
-            
+        # Извлекаем refresh токен из запроса, поддерживая разные форматы
+        refresh_token = None
+        
+        # Проверяем все возможные источники данных
+        sources = [
+            # Form-data
+            lambda: request.POST.get('refresh') if hasattr(request, 'POST') else None,
+            # JSON в body
+            lambda: request.data.get('refresh') if hasattr(request, 'data') and hasattr(request.data, 'get') else None,
+            # JSON в виде словаря
+            lambda: request.data.get('refresh') if isinstance(request.data, dict) else None,
+            # Строка в body
+            lambda: getattr(request, '_body', b'').decode('utf-8') if hasattr(request, '_body') else None
+        ]
+        
+        # Пробуем извлечь токен из различных источников
+        for source_func in sources:
             try:
-                token = RefreshToken(refresh_token)
-                access_token = str(token.access_token)
+                possible_token = source_func()
+                if possible_token:
+                    refresh_token = possible_token
+                    break
+            except:
+                continue
+        
+        # Если токен - строка JSON
+        if not refresh_token and isinstance(request.data, str):
+            try:
+                import json
+                json_data = json.loads(request.data)
+                refresh_token = json_data.get('refresh')
+            except:
+                pass
                 
-                return Response({
-                    'access': access_token
-                })
-            except TokenError as e:
-                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        # Если refresh_token - это строка JSON
+        if refresh_token and isinstance(refresh_token, str) and refresh_token.startswith('{'):
+            try:
+                import json
+                json_data = json.loads(refresh_token)
+                if isinstance(json_data, dict) and 'refresh' in json_data:
+                    refresh_token = json_data.get('refresh')
+            except:
+                pass
                 
+        # Проверяем наличие токена
+        if not refresh_token:
+            return Response({'refresh': ['Обязательное поле.']}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Обрабатываем токен
+        try:
+            token = RefreshToken(refresh_token)
+            access_token = str(token.access_token)
+            
+            return Response({
+                'access': access_token
+            })
+        except TokenError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
