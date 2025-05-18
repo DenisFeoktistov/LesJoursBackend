@@ -9,6 +9,10 @@ from masterclasses.models import Event
 from certificates.models import Certificate
 from decimal import Decimal
 import json
+from django.db import transaction
+from orders.models import Order, OrderItem
+from orders.utils import Cart
+from orders.api.serializers import OrderSerializer
 
 User = get_user_model()
 
@@ -205,4 +209,95 @@ def promo_unauth(request):
         
         return Response(result)
     except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST) 
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class CheckoutOrderView(APIView):
+    """
+    View for checking out an order.
+    Accepts user information and cart data, creates an order and returns order details.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, user_id):
+        try:
+            # Validate user_id matches authenticated user
+            if str(request.user.id) != str(user_id):
+                return Response(
+                    {'error': 'User ID mismatch'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Validate request data
+            user_info = request.data.get('user', {})
+            if not user_info:
+                return Response(
+                    {'error': 'User information is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            cart_data = request.data.get('cart', {})
+            if not cart_data:
+                return Response(
+                    {'error': 'Cart data is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Get cart from session
+            cart = Cart(request)
+            if not cart.cart:
+                return Response(
+                    {'error': 'Cart is empty'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Validate cart items availability
+            for item in cart.get_items():
+                if item['type'] == 'master_class' and not item['availability']:
+                    return Response(
+                        {'error': f"Not enough seats available for {item['name']}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+            # Create order in transaction
+            with transaction.atomic():
+                # Create order
+                order = Order.objects.create(
+                    user=request.user,
+                    total_price=cart.get_final_amount()
+                )
+
+                # Create order items
+                for item in cart.get_items():
+                    if item['type'] == 'master_class':
+                        event = get_object_or_404(Event, id=item['date']['id'])
+                        # Update available seats
+                        event.available_seats -= item['guestsAmount']
+                        event.save()
+                        # Create order item
+                        OrderItem.objects.create(
+                            order=order,
+                            masterclass=event.masterclass,
+                            quantity=item['guestsAmount'],
+                            price=event.masterclass.final_price
+                        )
+                    elif item['type'] == 'certificate':
+                        amount = Decimal(item['amount'])
+                        OrderItem.objects.create(
+                            order=order,
+                            masterclass=None,
+                            quantity=item['quantity'],
+                            price=amount
+                        )
+
+                # Clear cart after successful order creation
+                cart.clear()
+
+                # Return order details
+                response_data = OrderSerializer(order).data
+                return Response(response_data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            ) 

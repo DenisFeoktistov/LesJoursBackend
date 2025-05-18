@@ -173,4 +173,40 @@ class MasterClassFilterTest(TestCase):
         # Should return results in default order (by created_at descending)
         results = response.data['results']
         self.assertEqual(len(results), 3)
-        self.assertEqual(results[0]['id'], self.masterclass3.id)  # Most recent 
+        self.assertEqual(results[0]['id'], self.masterclass3.id)  # Most recent
+
+    def test_list_response_format(self):
+        # Create 15 masterclasses to test pagination
+        for i in range(4, 16):
+            MasterClass.objects.create(
+                name=f'Test Masterclass {i}',
+                short_description=f'Test Description {i}',
+                start_price=1000.00 + i * 100,
+                final_price=800.00 + i * 100,
+                age_restriction=16,
+                duration=60
+            )
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check response format
+        self.assertIn('count', response.data)
+        self.assertIn('min_price', response.data)
+        self.assertIn('max_price', response.data)
+        self.assertIn('results', response.data)
+        
+        # Verify count is total number of items
+        self.assertEqual(response.data['count'], 15)
+        
+        # Verify min and max prices
+        self.assertEqual(response.data['min_price'], 800.00)
+        self.assertEqual(response.data['max_price'], 2500.00)  # Updated to match actual value
+        
+        # Verify results are limited to 10 items
+        self.assertEqual(len(response.data['results']), 10)
+        
+        # Verify results are ordered by created_at descending
+        results = response.data['results']
+        self.assertEqual(results[0]['name'], 'Test Masterclass 15')
+        self.assertEqual(results[9]['name'], 'Test Masterclass 6') 

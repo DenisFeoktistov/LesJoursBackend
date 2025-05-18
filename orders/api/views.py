@@ -13,6 +13,9 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from rest_framework.authentication import TokenAuthentication
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+from certificates.models import Certificate
 
 User = get_user_model()
 

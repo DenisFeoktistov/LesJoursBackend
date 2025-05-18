@@ -5,13 +5,15 @@ from .cart_views import (
     CartView,
     update_cart_from_cookies,
     promo_auth,
-    promo_unauth
+    promo_unauth,
+    CheckoutOrderView
 )
 
 router = DefaultRouter()
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'order-items', OrderItemViewSet, basename='order-item')
 router.register(r'user', UserPasswordViewSet, basename='user')
+router.register(r'user-password', UserPasswordViewSet, basename='user-password')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -28,4 +30,6 @@ urlpatterns = [
     # Promo code
     path('promo/check/<int:user_id>/', promo_auth, name='promo-auth'),
     path('promo/anon_check/', promo_unauth, name='promo-unauth'),
+
+    path('checkout/<int:user_id>/', CheckoutOrderView.as_view(), name='checkout-order'),
 ] 

@@ -25,6 +25,10 @@ def load_data():
 
     # Создаем мастер-классы
     for masterclass_data in data:
+        # Получаем адрес и контакты из parameters
+        address = masterclass_data['parameters']['parameters']['Адрес'][0] if 'Адрес' in masterclass_data['parameters']['parameters'] else ''
+        contacts = masterclass_data['parameters']['parameters']['Контакты'][0] if 'Контакты' in masterclass_data['parameters']['parameters'] else ''
+        
         # Создаем мастер-класс
         masterclass = MasterClass.objects.create(
             name=masterclass_data['name'],
@@ -33,7 +37,7 @@ def load_data():
             start_price=masterclass_data['price']['start_price'],
             final_price=masterclass_data['price']['final_price'],
             bucket_link=masterclass_data['bucket_link'][0]['url'],
-            location=masterclass_data['location'],
+            location=address,  # Используем адрес из parameters
             max_seats=masterclass_data['max_seats'],
             age_restriction=masterclass_data['age_restriction'],
             duration=masterclass_data['duration'],
@@ -94,7 +98,7 @@ def update_age_parameters():
 
 if __name__ == '__main__':
     print("Начинаем заполнение базы данных...")
-    # load_data()
+    load_data()
     # randomize_occupied_seats()
     update_age_parameters()
     print("База данных успешно заполнена!") 

@@ -12,7 +12,7 @@ class MasterClass(models.Model):
     long_description = models.TextField(blank=True)
     start_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     final_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    bucket_link = models.JSONField(default=list)  # Will store list of image URLs
+    bucket_link = models.JSONField(default=list, help_text="List of image URLs in format [{'url': 'https://...'}]")
     age_restriction = models.PositiveIntegerField(default=0)
     duration = models.PositiveIntegerField(default=60, help_text="Duration in minutes")
     location = models.CharField(max_length=500, blank=True, help_text="Address where the masterclass will be held")

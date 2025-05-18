@@ -24,12 +24,7 @@ def fetch_cart_price(request):
         for unit in product_unit_list:
             if unit.startswith('certificate_'):
                 amount = unit.split('_')[1]
-                if request.user.is_authenticated:
-                    from certificates.models import Certificate
-                    certificate = Certificate.objects.create(user=request.user, amount=Decimal(amount), code='AUTO')
-                    cart.add('certificate', certificate.id, user=request.user)
-                else:
-                    cart.add('certificate', amount)
+                cart.add('certificate', amount, 1)  # Always add with quantity 1 for certificates
             else:
                 event_id, guests_amount, _ = unit.split('_')
                 cart.add('event', event_id, int(guests_amount))

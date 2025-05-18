@@ -9,6 +9,7 @@ from ..models import MasterClass, Event
 from .serializers import MasterClassSerializer, EventSerializer
 from .filters import MasterClassFilter
 from rest_framework import status
+from django.db import models
 
 
 class MasterClassViewSet(viewsets.ModelViewSet):
@@ -26,6 +27,7 @@ class MasterClassViewSet(viewsets.ModelViewSet):
     ]
     permission_classes = [permissions.AllowAny]
     lookup_field = 'slug'
+    pagination_class = None  # Disable default pagination
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -52,7 +54,23 @@ class MasterClassViewSet(viewsets.ModelViewSet):
         }
     )
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        queryset = self.filter_queryset(self.get_queryset())
+        total_count = queryset.count()
+        
+        # Get min and max prices from the filtered queryset
+        min_price = queryset.aggregate(models.Min('final_price'))['final_price__min']
+        max_price = queryset.aggregate(models.Max('final_price'))['final_price__max']
+        
+        # Limit to 10 items
+        queryset = queryset[:10]
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'count': total_count,
+            'min_price': min_price,
+            'max_price': max_price,
+            'results': serializer.data
+        })
 
     @swagger_auto_schema(
         operation_description="Create a new masterclass",

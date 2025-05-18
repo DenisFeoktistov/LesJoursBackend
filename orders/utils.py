@@ -90,53 +90,53 @@ class Cart:
         return self.promo_code
 
     def get_total_amount(self):
-        """Calculate total amount before any discounts"""
-        total = Decimal('0.00')
-        for item_key, item_data in self.cart.items():
-            if item_data['type'] == 'event':
+        """Get total amount without any discounts"""
+        total = Decimal('0')
+        for item in self.cart.values():
+            if item['type'] == 'event':
+                event = Event.objects.get(id=item['id'])
+                total += event.masterclass.final_price * item['quantity']
+            elif item['type'] == 'certificate':
+                # Для авторизованных пользователей ищем сертификат по id
                 try:
-                    event = Event.objects.get(id=item_data['id'])
-                    total += event.masterclass.start_price * item_data['quantity']
-                except Event.DoesNotExist:
-                    continue
-            elif item_data['type'] == 'certificate':
-                try:
-                    certificate = Certificate.objects.get(id=item_data['id'])
-                    total += certificate.amount * item_data['quantity']
+                    certificate = Certificate.objects.get(id=item['id'])
+                    amount = certificate.amount
                 except Certificate.DoesNotExist:
-                    continue
+                    # Для анонимных пользователей используем id как сумму
+                    amount = Decimal(item['id'])
+                total += amount * item['quantity']
         return total
 
     def get_sale(self):
-        """Calculate sale from masterclass discounts"""
-        sale = Decimal('0.00')
-        for item_key, item_data in self.cart.items():
-            if item_data['type'] == 'event':
-                try:
-                    event = Event.objects.get(id=item_data['id'])
-                    sale += (event.masterclass.start_price - event.masterclass.final_price) * item_data['quantity']
-                except Event.DoesNotExist:
-                    continue
-        return sale
+        """Get total sale amount"""
+        total = Decimal('0')
+        for item in self.cart.values():
+            if item['type'] == 'event':
+                event = Event.objects.get(id=item['id'])
+                if event.masterclass.start_price and event.masterclass.final_price:
+                    total += (event.masterclass.start_price - event.masterclass.final_price) * item['quantity']
+        return total
 
     def get_promo_sale(self):
-        """Calculate sale from promo code"""
+        """Get total promo sale amount"""
         if not self.promo_code:
-            return Decimal('0.00')
+            return Decimal('0')
             
-        # Example promo code logic - you should implement your own
-        if self.promo_code == 'TEST10':
-            return self.get_total_amount() * Decimal('0.10')  # 10% discount
-        elif self.promo_code == 'TEST20':
-            return self.get_total_amount() * Decimal('0.20')  # 20% discount
-        return Decimal('0.00')
+        total = Decimal('0')
+        for item in self.cart.values():
+            if item['type'] == 'event':
+                event = Event.objects.get(id=item['id'])
+                # Пример: 10% скидка по промокоду
+                if self.promo_code == 'TEST10':
+                    total += event.masterclass.final_price * item['quantity'] * Decimal('0.10')
+        return total
 
     def get_total_sale(self):
-        """Calculate total sale (masterclass + promo)"""
+        """Get total sale amount including promo sales"""
         return self.get_sale() + self.get_promo_sale()
 
     def get_final_amount(self):
-        """Calculate final amount after all discounts"""
+        """Get final amount after all discounts"""
         return self.get_total_amount() - self.get_total_sale()
 
     def get_items(self):
@@ -175,22 +175,19 @@ class Cart:
                     continue
             elif item_data['type'] == 'certificate':
                 try:
-                    if item_data.get('user'):
-                        certificate = Certificate.objects.get(id=item_data['id'])
-                        items.append({
-                            'type': 'certificate',
-                            'amount': str(certificate.amount),
-                            'quantity': item_data['quantity']
-                        })
-                    else:
-                        # For anonymous users, use the ID as the amount
-                        items.append({
-                            'type': 'certificate',
-                            'amount': str(item_data['id']),
-                            'quantity': item_data['quantity']
-                        })
+                    certificate = Certificate.objects.get(id=item_data['id'])
+                    items.append({
+                        'type': 'certificate',
+                        'amount': str(certificate.amount),
+                        'quantity': item_data['quantity']
+                    })
                 except Certificate.DoesNotExist:
-                    continue
+                    # For anonymous users, use the ID as the amount
+                    items.append({
+                        'type': 'certificate',
+                        'amount': str(item_data['id']),
+                        'quantity': item_data['quantity']
+                    })
         return items
 
     def get_cart_data(self):

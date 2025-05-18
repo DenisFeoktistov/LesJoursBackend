@@ -6,6 +6,7 @@ from masterclasses.models import MasterClass, Event
 from certificates.models import Certificate
 from decimal import Decimal
 import json
+from rest_framework.authtoken.models import Token
 
 User = get_user_model()
 
@@ -192,4 +193,96 @@ class CartAPITestCase(TestCase):
         self.assertIn('final_amount', response.data)
         self.assertIn('message', response.data)
         self.assertIn('status', response.data)
-        self.assertIn('promo_sale', response.data) 
+        self.assertIn('promo_sale', response.data)
+
+    def test_fetch_cart_price_with_certificates(self):
+        """Test fetching cart price with certificates"""
+        url = reverse('fetch-cart-price')
+        
+        # Test with multiple certificates
+        data = {
+            'product_unit_list': [
+                'certificate_1000',
+                'certificate_2000',
+                'certificate_2000',
+                'certificate_7777'
+            ],
+            'promo': ''
+        }
+        response = self.client.post(url, json.dumps(data), content_type='application/json')
+        print('DEBUG:', response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(float(response.data['total_amount']), 12777.00)  # 1000 + 2000 + 2000 + 7777
+        self.assertEqual(float(response.data['sale']), 0.00)  # No discounts for certificates
+        self.assertEqual(float(response.data['promo_sale']), 0.00)  # No promo code
+        self.assertEqual(float(response.data['total_sale']), 0.00)
+        self.assertEqual(float(response.data['final_amount']), 12777.00)
+
+        # Test with certificates and masterclass
+        data = {
+            'product_unit_list': [
+                'certificate_1000',
+                'certificate_2000',
+                f'{self.event.id}_2_guests'
+            ],
+            'promo': 'TEST10'
+        }
+        response = self.client.post(url, json.dumps(data), content_type='application/json')
+        print('DEBUG:', response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(float(response.data['total_amount']), 4600.00)  # 1000 + 2000 + (800 * 2)
+        self.assertEqual(float(response.data['sale']), 400.00)  # (1000 - 800) * 2
+        self.assertEqual(float(response.data['promo_sale']), 160.00)  # 10% от 1600 (только мастер-класс)
+        self.assertEqual(float(response.data['total_sale']), 560.00)  # 400 + 160
+        self.assertEqual(float(response.data['final_amount']), 4040.00)  # 4600 - 560
+
+    def test_checkout_order(self):
+        """Тест оформления заказа через /order/checkout/<user_id>/"""
+        # Добавляем в корзину мастер-класс и сертификат
+        cart_url = reverse('cart', kwargs={'user_id': self.user.id})
+        self.client.force_authenticate(user=self.user)
+        self.client.post(cart_url, {'type': 'event', 'id': self.event.id, 'quantity': 2})
+        self.client.post(cart_url, {'type': 'certificate', 'id': '5000', 'amount': '5000'})
+
+        # Формируем объект заказа
+        order_obj = {
+            'user': {
+                'email': 'test@example.com',
+                'phone': '+7 999 999-99-99',
+                'surname': 'Иванов',
+                'name': 'Иван',
+                'patronymic': 'Иванович',
+                'comment': 'Комментарий',
+                'telegram': '@testuser'
+            },
+            'cart': [
+                {'type': 'event', 'id': self.event.id, 'quantity': 2},
+                {'type': 'certificate', 'id': '5000', 'amount': '5000'}
+            ]
+        }
+        url = reverse('checkout-order', kwargs={'user_id': self.user.id})
+        token, _ = Token.objects.get_or_create(user=self.user)
+        response = self.client.post(url, order_obj, format='json', HTTP_AUTHORIZATION=f'Bearer {token.key}')
+        print('DEBUG checkout response:', response.data)
+        self.assertEqual(response.status_code, 201)
+        data = response.data
+        # Проверяем формат ответа
+        self.assertIn('id', data)
+        self.assertIn('order_units', data)
+        self.assertIn('formatted_date', data)
+        self.assertIn('number', data)
+        self.assertIn('total_amount', data)
+        self.assertIn('final_amount', data)
+        self.assertIn('total_sale', data)
+        self.assertIn('email', data)
+        self.assertIn('phone', data)
+        self.assertIn('surname', data)
+        self.assertIn('name', data)
+        self.assertIn('telegram', data)
+        # Проверяем, что места уменьшились
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.available_seats, 8)
+        # Проверяем, что корзина очищена
+        cart_url = reverse('cart', kwargs={'user_id': self.user.id})
+        cart_response = self.client.get(cart_url)
+        self.assertEqual(cart_response.data['total_amount'], 0.0) 

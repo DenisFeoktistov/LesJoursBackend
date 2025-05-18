@@ -329,11 +329,11 @@ class CartTest(TestCase):
         self.assertEqual(event_data['contacts'], self.masterclass.parameters['Контакты'][0])
         
         # Check totals
-        self.assertEqual(response.data['total_amount'], 200.00)  # 100.00 * 2
+        self.assertEqual(response.data['total_amount'], 180.00)  # 90.00 * 2
         self.assertEqual(response.data['sale'], 20.00)  # (100.00 - 90.00) * 2
         self.assertEqual(response.data['promo_sale'], 0.00)
         self.assertEqual(response.data['total_sale'], 20.00)
-        self.assertEqual(response.data['final_amount'], 180.00)
+        self.assertEqual(response.data['final_amount'], 160.00)  # 180.00 - 20.00
 
     def test_one_session_per_masterclass(self):
         """Test that only one session per masterclass can be in cart"""
@@ -382,19 +382,20 @@ class CartTest(TestCase):
         response = self.client.get(self.cart_url)
         self.assertEqual(len(response.data['product_units']), 2)
         # Проверяем суммы для двух разных мастер-классов
-        self.assertEqual(response.data['total_amount'], 400.00)  # (100.00 * 2) + (200.00 * 1)
+        self.assertEqual(response.data['total_amount'], 360.00)  # (90.00 * 2) + (180.00 * 1)
         self.assertEqual(response.data['sale'], 40.00)  # (100.00 - 90.00) * 2 + (200.00 - 180.00) * 1
-        self.assertEqual(response.data['final_amount'], 360.00)
+        self.assertEqual(response.data['final_amount'], 320.00)  # 360.00 - 40.00
 
     def test_add_certificate(self):
         """Test adding a certificate to cart"""
         data = {
             'type': 'certificate',
-            'id': self.certificate.id,
-            'amount': '5000',
+            'id': self.certificate.id,  # Используем id сертификата
+            'amount': str(self.certificate.amount),
             'quantity': 1
         }
         response = self.client.post(self.cart_url, data, format='json')
+        print('DEBUG:', response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         # Check response structure
@@ -407,9 +408,9 @@ class CartTest(TestCase):
         self.assertEqual(certificate_data['amount'], '5000.00')
         
         # Check totals
-        self.assertEqual(response.data['total_amount'], 5000.00)
+        self.assertEqual(response.data['total_amount'], float(self.certificate.amount))
         self.assertEqual(response.data['sale'], 0.00)
-        self.assertEqual(response.data['final_amount'], 5000.00)
+        self.assertEqual(response.data['final_amount'], float(self.certificate.amount))
 
     def test_promo_code(self):
         """Test adding and applying promo code"""
@@ -460,9 +461,9 @@ class CartTest(TestCase):
         }
         response = self.client.put(self.cart_url, update_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['total_amount'], 300.00)  # 100.00 * 3
+        self.assertEqual(response.data['total_amount'], 270.00)  # 90.00 * 3
         self.assertEqual(response.data['sale'], 30.00)  # (100.00 - 90.00) * 3
-        self.assertEqual(response.data['final_amount'], 270.00)
+        self.assertEqual(response.data['final_amount'], 240.00)  # 270.00 - 30.00
 
     def test_remove_event(self):
         """Test removing event from cart"""

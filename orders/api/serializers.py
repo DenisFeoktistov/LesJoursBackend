@@ -90,16 +90,37 @@ class OrderSerializer(serializers.ModelSerializer):
     final_amount = serializers.SerializerMethodField()
     total_sale = serializers.SerializerMethodField()
     status = serializers.CharField(read_only=False, required=False)
+    email = serializers.SerializerMethodField()
+    phone = serializers.SerializerMethodField()
+    surname = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    telegram = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = ['id', 'order_units', 'formatted_date', 'number', 
-                 'total_amount', 'final_amount', 'total_sale', 'status']
+                 'total_amount', 'final_amount', 'total_sale', 'status',
+                 'email', 'phone', 'surname', 'name', 'telegram']
+
+    def get_email(self, obj):
+        return obj.user.email
+
+    def get_phone(self, obj):
+        return obj.user.phone if hasattr(obj.user, 'phone') else None
+
+    def get_surname(self, obj):
+        return obj.user.surname if hasattr(obj.user, 'surname') else None
+
+    def get_name(self, obj):
+        return obj.user.name if hasattr(obj.user, 'name') else None
+
+    def get_telegram(self, obj):
+        return obj.user.telegram if hasattr(obj.user, 'telegram') else None
 
     def get_order_units(self, obj):
         items = []
         for item in obj.items.all():
-            if hasattr(item.masterclass, 'is_certificate') and item.masterclass.is_certificate:
+            if item.masterclass is None:
                 items.append(CertificateOrderItemSerializer(item).data)
             else:
                 items.append(OrderItemSerializer(item).data)
@@ -112,7 +133,7 @@ class OrderSerializer(serializers.ModelSerializer):
         return f"{obj.id:06d}"
 
     def get_total_amount(self, obj):
-        return float(sum(item.masterclass.final_price * item.quantity for item in obj.items.all()))
+        return float(sum(item.price * item.quantity for item in obj.items.all()))
 
     def get_final_amount(self, obj):
         return float(obj.total_price)
