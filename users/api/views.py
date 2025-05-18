@@ -335,24 +335,6 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         serializer = MasterClassSerializer(favorites, many=True)
         return Response(serializer.data)
 
-class TokenRefreshView(APIView):
-    permission_classes = [AllowAny]
-    
-    def post(self, request):
-        try:
-            refresh_token = request.data.get('refresh')
-            if not refresh_token:
-                return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
-                
-            token = RefreshToken(refresh_token)
-            access_token = str(token.access_token)
-            
-            return Response({
-                'access': access_token
-            })
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
 class UserInfoView(APIView):
     permission_classes = [IsAuthenticated]
     

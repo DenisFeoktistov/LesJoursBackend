@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    UserProfileViewSet, RegistrationView, LoginView, TokenRefreshView,
+    UserProfileViewSet, RegistrationView, LoginView,
     UserInfoView, UserLastSeenView, ChangePasswordView
 )
 from .wishlist_views import WishlistView
@@ -15,7 +15,6 @@ urlpatterns = [
     path('login', LoginView.as_view(), name='login'),
     path('wishlist/<int:id>', WishlistView.as_view(), name='wishlist'),
     path('wishlist/<int:id>/<int:product_id>', WishlistView.as_view(), name='wishlist-item'),
-    path('user/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('user_info/<int:id>', UserInfoView.as_view(), name='user_info'),
     path('last_seen/<int:id>', UserLastSeenView.as_view(), name='last_seen'),
     path('change_pwd_lk/<int:id>', ChangePasswordView.as_view(), name='change_password'),
