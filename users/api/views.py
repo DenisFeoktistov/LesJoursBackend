@@ -362,30 +362,69 @@ class CustomTokenRefreshView(APIView):
         }
     )
     def post(self, request):
-        # Извлекаем refresh токен из запроса, поддерживая разные форматы
+        # Основная логика для обработки JSON-объекта с фигурными скобками в формате x-www-form-urlencoded
         refresh_token = None
         
-        # Проверяем все возможные источники данных
-        sources = [
-            # Form-data
-            lambda: request.POST.get('refresh') if hasattr(request, 'POST') else None,
-            # JSON в body
-            lambda: request.data.get('refresh') if hasattr(request, 'data') and hasattr(request.data, 'get') else None,
-            # JSON в виде словаря
-            lambda: request.data.get('refresh') if isinstance(request.data, dict) else None,
-            # Строка в body
-            lambda: getattr(request, '_body', b'').decode('utf-8') if hasattr(request, '_body') else None
-        ]
+        # Если содержимое запроса - это форма с фигурными скобками JSON
+        if request.content_type == 'application/x-www-form-urlencoded':
+            # Сначала проверяем, есть ли данные в форме
+            raw_data = None
+            
+            # Проверяем, есть ли данные в ключах формы
+            if len(request.POST) == 1 and '{' in list(request.POST.keys())[0]:
+                # Если ключ - это JSON-строка с фигурными скобками
+                raw_data = list(request.POST.keys())[0]
+            elif len(request.POST) == 0 and request.body:
+                # Если POST пуст, но есть тело запроса
+                try:
+                    raw_data = request.body.decode('utf-8')
+                except:
+                    pass
+                    
+            # Пытаемся распарсить JSON
+            if raw_data and raw_data.startswith('{'):
+                try:
+                    import json
+                    json_data = json.loads(raw_data)
+                    if 'refresh' in json_data:
+                        refresh_token = json_data.get('refresh')
+                except:
+                    pass
         
-        # Пробуем извлечь токен из различных источников
-        for source_func in sources:
-            try:
-                possible_token = source_func()
-                if possible_token:
-                    refresh_token = possible_token
-                    break
-            except:
-                continue
+        # Стандартные проверки, если токен не найден выше
+        if not refresh_token:
+            # Проверяем все возможные источники данных
+            sources = [
+                # Form-data обычный ключ refresh
+                lambda: request.POST.get('refresh') if hasattr(request, 'POST') else None,
+                # JSON в body
+                lambda: request.data.get('refresh') if hasattr(request, 'data') and hasattr(request.data, 'get') else None,
+                # JSON в виде словаря
+                lambda: request.data.get('refresh') if isinstance(request.data, dict) else None,
+                # Строка в body
+                lambda: getattr(request, '_body', b'').decode('utf-8') if hasattr(request, '_body') else None
+            ]
+            
+            # Пробуем извлечь токен из различных источников
+            for source_func in sources:
+                try:
+                    possible_token = source_func()
+                    if possible_token:
+                        if isinstance(possible_token, str) and possible_token.startswith('{'):
+                            # Если это JSON-строка
+                            try:
+                                import json
+                                json_data = json.loads(possible_token)
+                                if 'refresh' in json_data:
+                                    refresh_token = json_data.get('refresh')
+                                    break
+                            except:
+                                pass
+                        else:
+                            refresh_token = possible_token
+                            break
+                except:
+                    continue
         
         # Если токен - строка JSON
         if not refresh_token and isinstance(request.data, str):
@@ -395,17 +434,7 @@ class CustomTokenRefreshView(APIView):
                 refresh_token = json_data.get('refresh')
             except:
                 pass
-                
-        # Если refresh_token - это строка JSON
-        if refresh_token and isinstance(refresh_token, str) and refresh_token.startswith('{'):
-            try:
-                import json
-                json_data = json.loads(refresh_token)
-                if isinstance(json_data, dict) and 'refresh' in json_data:
-                    refresh_token = json_data.get('refresh')
-            except:
-                pass
-                
+        
         # Проверяем наличие токена
         if not refresh_token:
             return Response({'refresh': ['Обязательное поле.']}, status=status.HTTP_400_BAD_REQUEST)
