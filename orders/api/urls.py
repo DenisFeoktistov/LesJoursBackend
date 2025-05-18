@@ -25,7 +25,7 @@ urlpatterns = [
     path('cart/<int:user_id>/<int:product_unit_id>/', CartView.as_view(), name='remove-from-cart'),
     
     # Cart sync
-    path('cart_list/<int:user_id>', update_cart_from_cookies, name='update-cart-from-cookies'),
+    path('cart_list/<int:user_id>/', update_cart_from_cookies, name='update-cart-from-cookies'),
     
     # Promo code
     path('promo/check/<int:user_id>/', promo_auth, name='promo-auth'),

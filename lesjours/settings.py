@@ -117,6 +117,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'lesjours.middleware.AppendOrRemoveSlashMiddleware',
 ]
 
 ROOT_URLCONF = 'lesjours.urls'
