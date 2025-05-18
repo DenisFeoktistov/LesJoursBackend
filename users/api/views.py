@@ -14,6 +14,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from datetime import datetime
 from masterclasses.models import MasterClass
 from masterclasses.api.serializers import MasterClassSerializer
+from rest_framework import serializers
 
 User = get_user_model()
 
@@ -28,7 +29,8 @@ class RegistrationView(APIView):
                 description="User registered successfully",
                 schema=RegistrationSerializer
             ),
-            400: "Bad Request"
+            400: "Bad Request",
+            500: "Internal Server Error"
         }
     )
     def post(self, request):
@@ -49,10 +51,12 @@ class RegistrationView(APIView):
                 'first_name': user.first_name,
                 'last_name': user.last_name
             }, status=status.HTTP_201_CREATED)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(
-                {'error': 'Account with this email already exists'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': 'Registration failed. Please try again.'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 class LoginView(APIView):

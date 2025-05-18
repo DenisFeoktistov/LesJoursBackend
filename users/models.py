@@ -15,21 +15,23 @@ class User(AbstractUser):
 
 
 class UserProfile(models.Model):
-    GENDER_CHOICES = [
+    GENDER_CHOICES = (
         ('M', 'Male'),
         ('F', 'Female'),
         ('O', 'Other'),
-    ]
+    )
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     birth_date = models.DateField(null=True, blank=True)
+    phone = models.CharField(max_length=15, null=True, blank=True)
+    is_mailing_list = models.BooleanField(default=False)
+    cart = models.JSONField(default=dict, blank=True)
     favorite_masterclasses = models.ManyToManyField('masterclasses.MasterClass', blank=True)
     last_seen_masterclasses = models.ManyToManyField('masterclasses.MasterClass', related_name='last_seen_by', blank=True)
-    cart = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
-        return f"Profile of {self.user.email}"
+        return f"{self.user.email}'s profile"
 
 
 @receiver(post_save, sender=User)

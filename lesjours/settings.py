@@ -140,7 +140,7 @@ WSGI_APPLICATION = 'lesjours.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-if 'test' in sys.argv:
+if any(x in sys.argv[0] for x in ['pytest', 'test']):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
