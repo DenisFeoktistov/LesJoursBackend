@@ -25,15 +25,20 @@ class RegistrationSerializer(serializers.ModelSerializer):
             message="This email is already registered."
         )
     ])
-    phone = serializers.CharField(
-        required=True
-    )
+    phone = serializers.CharField(required=True)
     gender = serializers.CharField(required=True)
     is_mailing_list = serializers.BooleanField(required=True)
 
     class Meta:
         model = get_user_model()
         fields = ['username', 'password', 'first_name', 'last_name', 'phone', 'gender', 'is_mailing_list']
+
+    def to_internal_value(self, data):
+        # Handle form-urlencoded data
+        if isinstance(data, dict) and all(isinstance(v, list) for v in data.values()):
+            # Convert form data format to single values
+            return {k: v[0] if v else None for k, v in data.items()}
+        return super().to_internal_value(data)
 
     def validate_gender(self, value):
         gender_mapping = {
