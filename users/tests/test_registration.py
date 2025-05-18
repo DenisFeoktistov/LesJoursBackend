@@ -74,6 +74,45 @@ class RegistrationAPITest(TestCase):
         response = self.client.post(self.register_url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_registration_gender_variations(self):
+        """Test registration with different gender string variations"""
+        gender_variations = [
+            ('male', 'M'),
+            ('Male', 'M'),
+            ('female', 'F'),
+            ('Female', 'F'),
+            ('other', 'O'),
+            ('Other', 'O')
+        ]
+        
+        for idx, (input_gender, expected_gender) in enumerate(gender_variations):
+            payload = self.valid_payload.copy()
+            payload['username'] = f'test_{input_gender}_{idx}@example.com'  # Уникальный email для каждого теста
+            payload['gender'] = input_gender
+            
+            print(f"\nDEBUG: Testing gender variation {input_gender}")
+            print(f"DEBUG: Payload: {payload}")
+            
+            response = self.client.post(self.register_url, payload)
+            print(f"DEBUG: Response status: {response.status_code}")
+            print(f"DEBUG: Response data: {response.data}")
+            
+            if response.status_code != status.HTTP_201_CREATED:
+                print(f"DEBUG: Full response content: {response.content}")
+                raise AssertionError(f"Registration failed for gender={input_gender}. Status={response.status_code}, Response={response.data}")
+            
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            
+            # Verify the gender was saved correctly
+            try:
+                user = User.objects.get(email=payload['username'].lower())
+                print(f"DEBUG: Found user with email {payload['username']}")
+                print(f"DEBUG: User profile gender: {user.profile.gender}")
+                self.assertEqual(user.profile.gender, expected_gender)
+            except User.DoesNotExist:
+                print(f"DEBUG: User not found with email {payload['username']}")
+                raise
+
 class TokenRefreshTest(TestCase):
     def setUp(self):
         self.client = APIClient()

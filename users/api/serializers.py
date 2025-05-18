@@ -28,7 +28,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(
         required=True
     )
-    gender = serializers.ChoiceField(choices=UserProfile.GENDER_CHOICES, required=True)
+    gender = serializers.CharField(required=True)
     is_mailing_list = serializers.BooleanField(required=True)
 
     class Meta:
@@ -39,16 +39,22 @@ class RegistrationSerializer(serializers.ModelSerializer):
         gender_mapping = {
             'male': 'M',
             'Male': 'M',
+            'M': 'M',
             'female': 'F',
             'Female': 'F',
+            'F': 'F',
             'other': 'O',
-            'Other': 'O'
+            'Other': 'O',
+            'O': 'O',
         }
-        return gender_mapping.get(value, value)
+        mapped = gender_mapping.get(value)
+        if not mapped:
+            raise serializers.ValidationError('Недопустимое значение пола. Используйте M, F, O или male/female/other.')
+        return mapped
 
     def create(self, validated_data):
         phone = validated_data.pop('phone')
-        gender = validated_data.pop('gender')
+        gender = self.validate_gender(validated_data.pop('gender')) 
         is_mailing_list = validated_data.pop('is_mailing_list')
         
         user = get_user_model().objects.create_user(
@@ -59,7 +65,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
             last_name=validated_data['last_name']
         )
         
-        # Update profile
+        # Явно создаём профиль, если он не был создан
+        if not hasattr(user, 'profile'):
+            UserProfile.objects.create(user=user)
+        
         user.profile.gender = gender
         user.profile.phone = phone
         user.profile.is_mailing_list = is_mailing_list

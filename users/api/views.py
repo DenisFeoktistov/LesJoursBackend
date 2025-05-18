@@ -35,8 +35,12 @@ class RegistrationView(APIView):
     )
     def post(self, request):
         try:
+            print("DEBUG: Registration request data:", request.data)
             serializer = RegistrationSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+            if not serializer.is_valid():
+                print("DEBUG: Validation errors:", serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
             user = serializer.save()
             
             # Generate tokens
@@ -52,10 +56,14 @@ class RegistrationView(APIView):
                 'last_name': user.last_name
             }, status=status.HTTP_201_CREATED)
         except serializers.ValidationError as e:
+            print("DEBUG: Validation error:", str(e))
             return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            print("DEBUG: Unexpected error:", str(e))
+            import traceback
+            print("DEBUG: Traceback:", traceback.format_exc())
             return Response(
-                {'error': 'Registration failed. Please try again.'}, 
+                {'error': f'Registration failed: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

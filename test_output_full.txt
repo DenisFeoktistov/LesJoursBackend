@@ -1,0 +1,235 @@
+/Users/denisfeo523/PycharmProjects/LesJours/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Found 14 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: allauth, corsheaders, django_filters, drf_yasg, messages, product_units, rest_framework, staticfiles
+  Apply all migrations: account, admin, auth, authtoken, certificates, contenttypes, masterclasses, orders, sessions, sites, socialaccount, users
+Running pre-migrate handlers for application admin
+Running pre-migrate handlers for application auth
+Running pre-migrate handlers for application contenttypes
+Running pre-migrate handlers for application sessions
+Running pre-migrate handlers for application sites
+Running pre-migrate handlers for application authtoken
+Running pre-migrate handlers for application allauth
+Running pre-migrate handlers for application account
+Running pre-migrate handlers for application socialaccount
+Running pre-migrate handlers for application users
+Running pre-migrate handlers for application masterclasses
+Running pre-migrate handlers for application orders
+Running pre-migrate handlers for application certificates
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying masterclasses.0001_initial... OK (0.002s)
+  Applying contenttypes.0001_initial... OK (0.001s)
+  Applying contenttypes.0002_remove_content_type_name... OK (0.003s)
+  Applying auth.0001_initial... OK (0.003s)
+  Applying auth.0002_alter_permission_name_max_length... OK (0.002s)
+  Applying auth.0003_alter_user_email_max_length... OK (0.001s)
+  Applying auth.0004_alter_user_username_opts... OK (0.001s)
+  Applying auth.0005_alter_user_last_login_null... OK (0.001s)
+  Applying auth.0006_require_contenttypes_0002... OK (0.000s)
+  Applying auth.0007_alter_validators_add_error_messages... OK (0.001s)
+  Applying auth.0008_alter_user_username_max_length... OK (0.001s)
+  Applying auth.0009_alter_user_last_name_max_length... OK (0.001s)
+  Applying auth.0010_alter_group_name_max_length... OK (0.002s)
+  Applying auth.0011_update_proxy_permissions... OK (0.002s)
+  Applying auth.0012_alter_user_first_name_max_length... OK (0.002s)
+  Applying users.0001_initial... OK (0.005s)
+  Applying account.0001_initial... OK (0.005s)
+  Applying account.0002_email_max_length... OK (0.003s)
+  Applying account.0003_alter_emailaddress_create_unique_verified_email... OK (0.005s)
+  Applying account.0004_alter_emailaddress_drop_unique_email... OK (0.003s)
+  Applying account.0005_emailaddress_idx_upper_email... OK (0.002s)
+  Applying admin.0001_initial... OK (0.003s)
+  Applying admin.0002_logentry_remove_auto_add... OK (0.003s)
+  Applying admin.0003_logentry_add_action_flag_choices... OK (0.003s)
+  Applying authtoken.0001_initial... OK (0.003s)
+  Applying authtoken.0002_auto_20160226_1747... OK (0.010s)
+  Applying authtoken.0003_tokenproxy... OK (0.000s)
+  Applying certificates.0001_initial... OK (0.001s)
+  Applying certificates.0002_initial... OK (0.004s)
+  Applying certificates.0003_alter_certificate_amount... OK (0.003s)
+  Applying masterclasses.0002_remove_masterclass_cover_image_and_more... OK (0.026s)
+  Applying masterclasses.0003_event_occupied_seats_masterclass_address_and_more... OK (0.006s)
+  Applying masterclasses.0004_rename_bucket_list_masterclass_bucket_link_and_more... OK (0.019s)
+  Applying masterclasses.0005_masterclass_details_masterclass_parameters... OK (0.005s)
+  Applying masterclasses.0006_masterclass_long_description... OK (0.002s)
+  Applying masterclasses.0007_masterclass_score_product_page... OK (0.003s)
+  Applying masterclasses.0008_alter_masterclass_bucket_link... OK (0.003s)
+  Applying orders.0001_initial... OK (0.006s)
+  Applying orders.0002_initial... OK (0.005s)
+  Applying orders.0003_alter_orderitem_masterclass... OK (0.005s)
+  Applying sessions.0001_initial... OK (0.001s)
+  Applying sites.0001_initial... OK (0.001s)
+  Applying sites.0002_alter_domain_unique... OK (0.001s)
+  Applying socialaccount.0001_initial... OK (0.017s)
+  Applying socialaccount.0002_token_max_lengths... OK (0.010s)
+  Applying socialaccount.0003_extra_data_default_dict... OK (0.003s)
+  Applying socialaccount.0004_app_provider_id_settings... OK (0.009s)
+  Applying socialaccount.0005_socialtoken_nullable_app... OK (0.007s)
+  Applying socialaccount.0006_alter_socialaccount_extra_data... OK (0.005s)
+  Applying users.0002_userprofile_last_seen_masterclasses... OK (0.006s)
+  Applying users.0003_userprofile_is_mailing_list_userprofile_phone... OK (0.010s)
+  Applying users.0004_alter_userprofile_phone... OK (0.006s)
+Running post-migrate handlers for application admin
+Adding content type 'admin | logentry'
+Adding permission 'Permission object (1)'
+Adding permission 'Permission object (2)'
+Adding permission 'Permission object (3)'
+Adding permission 'Permission object (4)'
+Running post-migrate handlers for application auth
+Adding content type 'auth | permission'
+Adding content type 'auth | group'
+Adding permission 'Permission object (5)'
+Adding permission 'Permission object (6)'
+Adding permission 'Permission object (7)'
+Adding permission 'Permission object (8)'
+Adding permission 'Permission object (9)'
+Adding permission 'Permission object (10)'
+Adding permission 'Permission object (11)'
+Adding permission 'Permission object (12)'
+Running post-migrate handlers for application contenttypes
+Adding content type 'contenttypes | contenttype'
+Adding permission 'Permission object (13)'
+Adding permission 'Permission object (14)'
+Adding permission 'Permission object (15)'
+Adding permission 'Permission object (16)'
+Running post-migrate handlers for application sessions
+Adding content type 'sessions | session'
+Adding permission 'Permission object (17)'
+Adding permission 'Permission object (18)'
+Adding permission 'Permission object (19)'
+Adding permission 'Permission object (20)'
+Running post-migrate handlers for application sites
+Adding content type 'sites | site'
+Adding permission 'Permission object (21)'
+Adding permission 'Permission object (22)'
+Adding permission 'Permission object (23)'
+Adding permission 'Permission object (24)'
+Creating example.com Site object
+Running post-migrate handlers for application authtoken
+Adding content type 'authtoken | token'
+Adding content type 'authtoken | tokenproxy'
+Adding permission 'Permission object (25)'
+Adding permission 'Permission object (26)'
+Adding permission 'Permission object (27)'
+Adding permission 'Permission object (28)'
+Adding permission 'Permission object (29)'
+Adding permission 'Permission object (30)'
+Adding permission 'Permission object (31)'
+Adding permission 'Permission object (32)'
+Running post-migrate handlers for application allauth
+Running post-migrate handlers for application account
+Adding content type 'account | emailaddress'
+Adding content type 'account | emailconfirmation'
+Adding permission 'Permission object (33)'
+Adding permission 'Permission object (34)'
+Adding permission 'Permission object (35)'
+Adding permission 'Permission object (36)'
+Adding permission 'Permission object (37)'
+Adding permission 'Permission object (38)'
+Adding permission 'Permission object (39)'
+Adding permission 'Permission object (40)'
+Running post-migrate handlers for application socialaccount
+Adding content type 'socialaccount | socialaccount'
+Adding content type 'socialaccount | socialapp'
+Adding content type 'socialaccount | socialtoken'
+Adding permission 'Permission object (41)'
+Adding permission 'Permission object (42)'
+Adding permission 'Permission object (43)'
+Adding permission 'Permission object (44)'
+Adding permission 'Permission object (45)'
+Adding permission 'Permission object (46)'
+Adding permission 'Permission object (47)'
+Adding permission 'Permission object (48)'
+Adding permission 'Permission object (49)'
+Adding permission 'Permission object (50)'
+Adding permission 'Permission object (51)'
+Adding permission 'Permission object (52)'
+Running post-migrate handlers for application users
+Adding content type 'users | user'
+Adding content type 'users | userprofile'
+Adding permission 'Permission object (53)'
+Adding permission 'Permission object (54)'
+Adding permission 'Permission object (55)'
+Adding permission 'Permission object (56)'
+Adding permission 'Permission object (57)'
+Adding permission 'Permission object (58)'
+Adding permission 'Permission object (59)'
+Adding permission 'Permission object (60)'
+Running post-migrate handlers for application masterclasses
+Adding content type 'masterclasses | masterclass'
+Adding content type 'masterclasses | event'
+Adding permission 'Permission object (61)'
+Adding permission 'Permission object (62)'
+Adding permission 'Permission object (63)'
+Adding permission 'Permission object (64)'
+Adding permission 'Permission object (65)'
+Adding permission 'Permission object (66)'
+Adding permission 'Permission object (67)'
+Adding permission 'Permission object (68)'
+Running post-migrate handlers for application orders
+Adding content type 'orders | order'
+Adding content type 'orders | orderitem'
+Adding permission 'Permission object (69)'
+Adding permission 'Permission object (70)'
+Adding permission 'Permission object (71)'
+Adding permission 'Permission object (72)'
+Adding permission 'Permission object (73)'
+Adding permission 'Permission object (74)'
+Adding permission 'Permission object (75)'
+Adding permission 'Permission object (76)'
+Running post-migrate handlers for application certificates
+Adding content type 'certificates | certificate'
+Adding permission 'Permission object (77)'
+Adding permission 'Permission object (78)'
+Adding permission 'Permission object (79)'
+Adding permission 'Permission object (80)'
+System check identified no issues (0 silenced).
+test_change_password_invalid_old_password (users.tests.test_registration.ChangePasswordTest)
+Test password change with invalid old password ... ok
+test_change_password_success (users.tests.test_registration.ChangePasswordTest)
+Test successful password change ... ok
+test_add_last_seen_success (users.tests.test_registration.LastSeenTest)
+Test successful addition to last seen ... ok
+test_get_last_seen_success (users.tests.test_registration.LastSeenTest)
+Test successful retrieval of last seen items ... ok
+test_registration_duplicate_email (users.tests.test_registration.RegistrationAPITest)
+Test registration with existing email ... ok
+test_registration_gender_variations (users.tests.test_registration.RegistrationAPITest)
+Test registration with different gender string variations ... FAIL
+test_registration_invalid_gender (users.tests.test_registration.RegistrationAPITest)
+Test registration with invalid gender ... ok
+test_registration_missing_fields (users.tests.test_registration.RegistrationAPITest)
+Test registration with missing required fields ... ok
+test_registration_success (users.tests.test_registration.RegistrationAPITest)
+Test successful user registration ... ok
+test_token_refresh_invalid_token (users.tests.test_registration.TokenRefreshTest)
+Test refresh with invalid token ... ok
+test_token_refresh_missing_token (users.tests.test_registration.TokenRefreshTest)
+Test refresh without token ... ok
+test_token_refresh_success (users.tests.test_registration.TokenRefreshTest)
+Test successful token refresh ... ok
+test_get_user_info_success (users.tests.test_registration.UserInfoTest)
+Test successful user info retrieval ... ok
+test_update_user_info_success (users.tests.test_registration.UserInfoTest)
+Test successful user info update ... ok
+
+======================================================================
+FAIL: test_registration_gender_variations (users.tests.test_registration.RegistrationAPITest)
+Test registration with different gender string variations
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/denisfeo523/PycharmProjects/LesJours/users/tests/test_registration.py", line 94, in test_registration_gender_variations
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+AssertionError: 500 != 201
+
+----------------------------------------------------------------------
+Ran 14 tests in 2.706s
+
+FAILED (failures=1)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+DEBUG registration response: {'user_id': 1, 'access': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzczNDk3MjY4LCJpYXQiOjE3NDc1NzcyNjgsImp0aSI6IjVmYTZhZjBlZTE2MjQ0ODdhMGMxZDU0MWVlOTdiNWM3IiwidXNlcl9pZCI6MX0.OFU-GTQU6XD7DQI_Zsa_qUP-Ly8D46R4KACD7zwqnjw', 'refresh': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3ODY4MTI2OCwiaWF0IjoxNzQ3NTc3MjY4LCJqdGkiOiI2NmMwY2UzZjFlZGE0ODVkYTRlYWExNWI2YTVlM2Y3MiIsInVzZXJfaWQiOjF9.vvhZmWTRbllC8lLaAXu3bf4TqTchOnPMU5YMmbQQTgc', 'gender': 'M', 'username': 'test@example.com', 'first_name': 'Test', 'last_name': 'User'}

@@ -1,0 +1,108 @@
+/Users/denisfeo523/PycharmProjects/LesJours/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Found 14 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: allauth, corsheaders, django_filters, drf_yasg, messages, product_units, rest_framework, staticfiles
+  Apply all migrations: account, admin, auth, authtoken, certificates, contenttypes, masterclasses, orders, sessions, sites, socialaccount, users
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying masterclasses.0001_initial... OK
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying users.0001_initial... OK
+  Applying account.0001_initial... OK
+  Applying account.0002_email_max_length... OK
+  Applying account.0003_alter_emailaddress_create_unique_verified_email... OK
+  Applying account.0004_alter_emailaddress_drop_unique_email... OK
+  Applying account.0005_emailaddress_idx_upper_email... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying authtoken.0001_initial... OK
+  Applying authtoken.0002_auto_20160226_1747... OK
+  Applying authtoken.0003_tokenproxy... OK
+  Applying certificates.0001_initial... OK
+  Applying certificates.0002_initial... OK
+  Applying certificates.0003_alter_certificate_amount... OK
+  Applying masterclasses.0002_remove_masterclass_cover_image_and_more... OK
+  Applying masterclasses.0003_event_occupied_seats_masterclass_address_and_more... OK
+  Applying masterclasses.0004_rename_bucket_list_masterclass_bucket_link_and_more... OK
+  Applying masterclasses.0005_masterclass_details_masterclass_parameters... OK
+  Applying masterclasses.0006_masterclass_long_description... OK
+  Applying masterclasses.0007_masterclass_score_product_page... OK
+  Applying masterclasses.0008_alter_masterclass_bucket_link... OK
+  Applying orders.0001_initial... OK
+  Applying orders.0002_initial... OK
+  Applying orders.0003_alter_orderitem_masterclass... OK
+  Applying sessions.0001_initial... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+  Applying socialaccount.0001_initial... OK
+  Applying socialaccount.0002_token_max_lengths... OK
+  Applying socialaccount.0003_extra_data_default_dict... OK
+  Applying socialaccount.0004_app_provider_id_settings... OK
+  Applying socialaccount.0005_socialtoken_nullable_app... OK
+  Applying socialaccount.0006_alter_socialaccount_extra_data... OK
+  Applying users.0002_userprofile_last_seen_masterclasses... OK
+  Applying users.0003_userprofile_is_mailing_list_userprofile_phone... OK
+  Applying users.0004_alter_userprofile_phone... OK
+System check identified no issues (0 silenced).
+test_change_password_invalid_old_password (users.tests.test_registration.ChangePasswordTest)
+Test password change with invalid old password ... ok
+test_change_password_success (users.tests.test_registration.ChangePasswordTest)
+Test successful password change ... ok
+test_add_last_seen_success (users.tests.test_registration.LastSeenTest)
+Test successful addition to last seen ... ok
+test_get_last_seen_success (users.tests.test_registration.LastSeenTest)
+Test successful retrieval of last seen items ... ok
+test_registration_duplicate_email (users.tests.test_registration.RegistrationAPITest)
+Test registration with existing email ... ok
+test_registration_gender_variations (users.tests.test_registration.RegistrationAPITest)
+Test registration with different gender string variations ... FAIL
+test_registration_invalid_gender (users.tests.test_registration.RegistrationAPITest)
+Test registration with invalid gender ... ok
+test_registration_missing_fields (users.tests.test_registration.RegistrationAPITest)
+Test registration with missing required fields ... ok
+test_registration_success (users.tests.test_registration.RegistrationAPITest)
+Test successful user registration ... ok
+test_token_refresh_invalid_token (users.tests.test_registration.TokenRefreshTest)
+Test refresh with invalid token ... ok
+test_token_refresh_missing_token (users.tests.test_registration.TokenRefreshTest)
+Test refresh without token ... ok
+test_token_refresh_success (users.tests.test_registration.TokenRefreshTest)
+Test successful token refresh ... ok
+test_get_user_info_success (users.tests.test_registration.UserInfoTest)
+Test successful user info retrieval ... ok
+test_update_user_info_success (users.tests.test_registration.UserInfoTest)
+Test successful user info update ... ok
+
+======================================================================
+FAIL: test_registration_gender_variations (users.tests.test_registration.RegistrationAPITest)
+Test registration with different gender string variations
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/denisfeo523/PycharmProjects/LesJours/users/tests/test_registration.py", line 94, in test_registration_gender_variations
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+AssertionError: 500 != 201
+
+----------------------------------------------------------------------
+Ran 14 tests in 2.643s
+
+FAILED (failures=1)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+DEBUG registration response: {'user_id': 1, 'access': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzczNDk3MjI2LCJpYXQiOjE3NDc1NzcyMjYsImp0aSI6ImVlODlkMWQwNWFjMTQyZTViNjg0YjgyYWNhMjgyNDk3IiwidXNlcl9pZCI6MX0.ZpEAuvC36eB_qrQj1EOhQOJVDE91XKnqPIgfkoYjFbs', 'refresh': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3ODY4MTIyNiwiaWF0IjoxNzQ3NTc3MjI2LCJqdGkiOiIwODkzOTJhYmQ3NTY0MjMxOWQ2ZGNkOTJlOGNmMDgyNSIsInVzZXJfaWQiOjF9.j_uvrD8fnSl8StjcgwavikTbuipel59kRXiLzCvjqiE', 'gender': 'M', 'username': 'test@example.com', 'first_name': 'Test', 'last_name': 'User'}
