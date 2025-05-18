@@ -180,6 +180,40 @@ class MasterClassViewSet(viewsets.ModelViewSet):
             'message': message
         })
 
+    @swagger_auto_schema(
+        operation_description="Get masterclasses by their IDs",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'products': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(type=openapi.TYPE_STRING),
+                    description="List of masterclass IDs"
+                )
+            },
+            required=['products']
+        ),
+        responses={
+            200: openapi.Response(
+                description="List of masterclasses",
+                schema=MasterClassSerializer(many=True)
+            ),
+            400: "Bad Request"
+        }
+    )
+    @action(detail=False, methods=['post'])
+    def list_masterclasses(self, request):
+        product_ids = request.data.get('products', [])
+        if not product_ids:
+            return Response(
+                {'error': 'No product IDs provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        masterclasses = MasterClass.objects.filter(id__in=product_ids)
+        serializer = self.get_serializer(masterclasses, many=True)
+        return Response(serializer.data)
+
 
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()

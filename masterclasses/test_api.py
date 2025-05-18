@@ -269,6 +269,75 @@ class MasterClassAPITest(TestCase):
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_list_masterclasses_by_ids(self):
+        # Create a second masterclass for testing
+        second_masterclass = MasterClass.objects.create(
+            name='Second Test Masterclass',
+            short_description='Another test description',
+            start_price=100.00,
+            final_price=90.00,
+            bucket_link='https://example.com/image2.jpg',
+            age_restriction=18,
+            duration=120
+        )
+
+        # Test with valid IDs
+        url = reverse('masterclass-list-masterclasses')
+        response = self.client.post(url, {'products': [self.masterclass.id, second_masterclass.id]}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertIn('in_wishlist', response.data[0])
+        self.assertIn('in_wishlist', response.data[1])
+        
+        # Verify response format
+        first_masterclass = response.data[0]
+        self.assertIn('id', first_masterclass)
+        self.assertIn('price', first_masterclass)
+        self.assertIn('start_price', first_masterclass['price'])
+        self.assertIn('final_price', first_masterclass['price'])
+        self.assertIn('short_description', first_masterclass)
+        self.assertIn('slug', first_masterclass)
+        self.assertIn('location', first_masterclass)
+        self.assertIn('name', first_masterclass)
+        self.assertIn('bucket_link', first_masterclass)
+
+        # Test with empty products list
+        response = self.client.post(url, {'products': []}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', response.data)
+
+        # Test with non-existent IDs
+        response = self.client.post(url, {'products': [99999, 99998]}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
+
+        # Test with invalid request format
+        response = self.client.post(url, {'invalid_key': [1, 2]}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Test with string IDs instead of integers
+        response = self.client.post(url, {'products': ['1', '2']}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+        # Test with mixed valid and invalid IDs
+        response = self.client.post(url, {'products': [self.masterclass.id, 99999]}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['id'], self.masterclass.id)
+
+        # Test with wishlist functionality
+        self.user.profile.favorite_masterclasses.add(self.masterclass)
+        response = self.client.post(url, {'products': [self.masterclass.id]}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data[0]['in_wishlist'])
+
+        # Test with unauthenticated user
+        self.client.force_authenticate(user=None)
+        response = self.client.post(url, {'products': [self.masterclass.id]}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data[0]['in_wishlist'])
+
 
 class EventAPITest(TestCase):
     def setUp(self):
