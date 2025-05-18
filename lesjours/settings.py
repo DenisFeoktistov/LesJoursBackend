@@ -42,6 +42,9 @@ CSRF_TRUSTED_ORIGINS = [
     'http://les-jours.ru',
 ]
 
+# URL Settings
+APPEND_SLASH = False
+
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
