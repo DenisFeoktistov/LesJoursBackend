@@ -15,6 +15,7 @@ from datetime import datetime
 from masterclasses.models import MasterClass
 from masterclasses.api.serializers import MasterClassSerializer
 from rest_framework import serializers
+from rest_framework_simplejwt.exceptions import TokenError
 
 User = get_user_model()
 
@@ -334,6 +335,51 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         favorites = user.profile.favorite_masterclasses.all()
         serializer = MasterClassSerializer(favorites, many=True)
         return Response(serializer.data)
+
+class CustomTokenRefreshView(APIView):
+    permission_classes = [AllowAny]
+    
+    @swagger_auto_schema(
+        operation_description="Refresh token",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'refresh': openapi.Schema(type=openapi.TYPE_STRING, description='Refresh token')
+            },
+            required=['refresh']
+        ),
+        responses={
+            200: openapi.Response(
+                description="Token refreshed successfully",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'access': openapi.Schema(type=openapi.TYPE_STRING, description='New access token')
+                    }
+                )
+            ),
+            400: "Bad Request"
+        }
+    )
+    def post(self, request):
+        try:
+            refresh_token = request.POST.get('refresh') or request.data.get('refresh')
+            
+            if not refresh_token:
+                return Response({'refresh': ['Обязательное поле.']}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                token = RefreshToken(refresh_token)
+                access_token = str(token.access_token)
+                
+                return Response({
+                    'access': access_token
+                })
+            except TokenError as e:
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserInfoView(APIView):
     permission_classes = [IsAuthenticated]
