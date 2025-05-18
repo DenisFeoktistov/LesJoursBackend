@@ -134,6 +134,10 @@ def update_cart_from_cookies(request, user_id):
         # Clear existing cart
         cart.clear()
         
+        # If product_unit_list is ["false"], just return empty list
+        if len(product_unit_list) == 1 and product_unit_list[0] == "false":
+            return Response([])
+        
         # Add items from cookies
         for unit in product_unit_list:
             if unit.startswith('certificate_'):
