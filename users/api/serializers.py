@@ -16,6 +16,13 @@ class LoginSerializer(serializers.Serializer):
     username = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
+    def to_internal_value(self, data):
+        # Handle form-urlencoded data
+        if isinstance(data, dict) and all(isinstance(v, list) for v in data.values()):
+            # Convert form data format to single values
+            return {k: v[0] if v else None for k, v in data.items()}
+        return super().to_internal_value(data)
+
 
 class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
