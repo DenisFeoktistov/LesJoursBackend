@@ -387,7 +387,10 @@ class UserInfoView(APIView):
             user.username = request.data.get('username', user.username)
             
             # Update profile fields
-            profile.gender = request.data.get('gender', profile.gender)
+            gender = request.data.get('gender', profile.gender)
+            if gender in ['M', 'F']:
+                gender = 'male' if gender == 'M' else 'female'
+            profile.gender = gender
             
             if 'date' in request.data:
                 try:

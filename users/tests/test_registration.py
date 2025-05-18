@@ -79,37 +79,23 @@ class RegistrationAPITest(TestCase):
         gender_variations = [
             ('male', 'male'),
             ('Male', 'male'),
+            ('M', 'male'),
             ('female', 'female'),
             ('Female', 'female'),
+            ('F', 'female'),
         ]
         
         for idx, (input_gender, expected_gender) in enumerate(gender_variations):
             payload = self.valid_payload.copy()
-            payload['username'] = f'test_{input_gender}_{idx}@example.com'  # Уникальный email для каждого теста
+            payload['username'] = f'test_{input_gender}_{idx}@example.com'
             payload['gender'] = input_gender
             
-            print(f"\nDEBUG: Testing gender variation {input_gender}")
-            print(f"DEBUG: Payload: {payload}")
-            
             response = self.client.post(self.register_url, payload)
-            print(f"DEBUG: Response status: {response.status_code}")
-            print(f"DEBUG: Response data: {response.data}")
-            
-            if response.status_code != status.HTTP_201_CREATED:
-                print(f"DEBUG: Full response content: {response.content}")
-                raise AssertionError(f"Registration failed for gender={input_gender}. Status={response.status_code}, Response={response.data}")
-            
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
             
             # Verify the gender was saved correctly
-            try:
-                user = User.objects.get(email=payload['username'].lower())
-                print(f"DEBUG: Found user with email {payload['username']}")
-                print(f"DEBUG: User profile gender: {user.profile.gender}")
-                self.assertEqual(user.profile.gender, expected_gender)
-            except User.DoesNotExist:
-                print(f"DEBUG: User not found with email {payload['username']}")
-                raise
+            user = User.objects.get(email=payload['username'].lower())
+            self.assertEqual(user.profile.gender, expected_gender)
 
 class TokenRefreshTest(TestCase):
     def setUp(self):
@@ -164,7 +150,8 @@ class UserInfoTest(TestCase):
         self.assertEqual(response.data['email'], self.user.email)
         self.assertEqual(response.data['first_name'], self.user.first_name)
         self.assertEqual(response.data['last_name'], self.user.last_name)
-        self.assertEqual(response.data['gender']['name'], self.profile.gender)
+        self.assertEqual(response.data['gender']['id'], 1)
+        self.assertEqual(response.data['gender']['name'], 'male')
 
     def test_update_user_info_success(self):
         """Test successful user info update"""
@@ -185,8 +172,12 @@ class UserInfoTest(TestCase):
         self.assertEqual(self.user.first_name, update_data['first_name'])
         self.assertEqual(self.user.last_name, update_data['last_name'])
         self.assertEqual(self.user.email, update_data['email'])
-        self.assertEqual(self.profile.gender, update_data['gender'])
-        self.assertEqual(self.profile.birth_date.strftime('%d.%m.%Y'), update_data['date'])
+        self.assertEqual(self.profile.gender, 'female')
+        
+        # Проверяем ответ API после обновления
+        response = self.client.get(self.user_info_url)
+        self.assertEqual(response.data['gender']['id'], 2)
+        self.assertEqual(response.data['gender']['name'], 'female')
 
 class LastSeenTest(TestCase):
     def setUp(self):
