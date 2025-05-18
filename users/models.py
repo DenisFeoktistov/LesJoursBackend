@@ -16,13 +16,12 @@ class User(AbstractUser):
 
 class UserProfile(models.Model):
     GENDER_CHOICES = (
-        ('M', 'Male'),
-        ('F', 'Female'),
-        ('O', 'Other'),
+        ('male', 'Male'),
+        ('female', 'Female'),
     )
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+    gender = models.CharField(max_length=6, choices=GENDER_CHOICES)
     birth_date = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length=15, null=True, blank=True)
     is_mailing_list = models.BooleanField(default=False)

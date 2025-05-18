@@ -40,7 +40,7 @@ class RegistrationAPITest(TestCase):
         user = User.objects.get(email=self.valid_payload['username'])
         self.assertEqual(user.first_name, self.valid_payload['first_name'])
         self.assertEqual(user.last_name, self.valid_payload['last_name'])
-        self.assertEqual(user.profile.gender, self.valid_payload['gender'])
+        self.assertEqual(user.profile.gender, 'male')
 
     def test_registration_duplicate_email(self):
         """Test registration with existing email"""
@@ -77,12 +77,10 @@ class RegistrationAPITest(TestCase):
     def test_registration_gender_variations(self):
         """Test registration with different gender string variations"""
         gender_variations = [
-            ('male', 'M'),
-            ('Male', 'M'),
-            ('female', 'F'),
-            ('Female', 'F'),
-            ('other', 'O'),
-            ('Other', 'O')
+            ('male', 'male'),
+            ('Male', 'male'),
+            ('female', 'female'),
+            ('Female', 'female'),
         ]
         
         for idx, (input_gender, expected_gender) in enumerate(gender_variations):

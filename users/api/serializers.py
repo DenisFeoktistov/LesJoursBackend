@@ -101,19 +101,16 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     def validate_gender(self, value):
         gender_mapping = {
-            'male': 'M',
-            'Male': 'M',
-            'M': 'M',
-            'female': 'F',
-            'Female': 'F',
-            'F': 'F',
-            'other': 'O',
-            'Other': 'O',
-            'O': 'O',
+            'male': 'male',
+            'Male': 'male',
+            'M': 'male',
+            'female': 'female',
+            'Female': 'female',
+            'F': 'female',
         }
         mapped = gender_mapping.get(value)
         if not mapped:
-            raise serializers.ValidationError('Недопустимое значение пола. Используйте M, F, O или male/female/other.')
+            raise serializers.ValidationError('Недопустимое значение пола. Используйте male/female или M/F.')
         return mapped
 
     def create(self, validated_data):
