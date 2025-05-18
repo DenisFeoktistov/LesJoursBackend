@@ -367,6 +367,7 @@ class UserInfoView(APIView):
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'email': user.email,
+                'phone': profile.phone,
                 'gender': {
                     'id': 1 if profile.gender == 'M' else 2,
                     'name': 'male' if profile.gender == 'M' else 'female'
