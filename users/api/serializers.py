@@ -35,6 +35,17 @@ class RegistrationSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = ['username', 'password', 'first_name', 'last_name', 'phone', 'gender', 'is_mailing_list']
 
+    def validate_gender(self, value):
+        gender_mapping = {
+            'male': 'M',
+            'Male': 'M',
+            'female': 'F',
+            'Female': 'F',
+            'other': 'O',
+            'Other': 'O'
+        }
+        return gender_mapping.get(value, value)
+
     def create(self, validated_data):
         phone = validated_data.pop('phone')
         gender = validated_data.pop('gender')
