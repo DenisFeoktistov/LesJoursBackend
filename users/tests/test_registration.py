@@ -135,7 +135,7 @@ class UserInfoTest(TestCase):
             last_name='User'
         )
         self.profile = self.user.profile
-        self.profile.gender = 'M'
+        self.profile.gender = 'male'
         self.profile.save()
         
         self.token = RefreshToken.for_user(self.user)
@@ -151,7 +151,7 @@ class UserInfoTest(TestCase):
         self.assertEqual(response.data['first_name'], self.user.first_name)
         self.assertEqual(response.data['last_name'], self.user.last_name)
         self.assertEqual(response.data['gender']['id'], 1)
-        self.assertEqual(response.data['gender']['name'], 'male')
+        self.assertEqual(response.data['gender']['name'], 'M')
 
     def test_update_user_info_success(self):
         """Test successful user info update"""
@@ -177,7 +177,7 @@ class UserInfoTest(TestCase):
         # Проверяем ответ API после обновления
         response = self.client.get(self.user_info_url)
         self.assertEqual(response.data['gender']['id'], 2)
-        self.assertEqual(response.data['gender']['name'], 'female')
+        self.assertEqual(response.data['gender']['name'], 'F')
 
 class LastSeenTest(TestCase):
     def setUp(self):

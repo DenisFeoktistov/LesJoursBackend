@@ -466,10 +466,10 @@ class UserInfoView(APIView):
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'email': user.email,
-                'phone': profile.phone,
+                'phone_number': profile.phone,
                 'gender': {
-                    'id': 1 if profile.gender == 'M' else 2,
-                    'name': 'male' if profile.gender == 'M' else 'female'
+                    'id': 1 if profile.gender == 'male' else 2,
+                    'name': 'M' if profile.gender == 'male' else 'F'
                 }
             })
         except User.DoesNotExist:
@@ -492,6 +492,10 @@ class UserInfoView(APIView):
                 gender = 'male' if gender == 'M' else 'female'
             profile.gender = gender
             
+            # Update phone number
+            if 'phone' in request.data:
+                profile.phone = request.data.get('phone')
+            
             if 'date' in request.data:
                 try:
                     profile.birth_date = datetime.strptime(request.data['date'], '%d.%m.%Y').date()
@@ -501,7 +505,19 @@ class UserInfoView(APIView):
             user.save()
             profile.save()
             
-            return Response({'message': 'User info updated successfully'})
+            # Return the same format as GET method
+            return Response({
+                'id': user.id,
+                'formatted_happy_birthday_date': profile.birth_date.strftime('%d.%m.%Y') if profile.birth_date else None,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'phone_number': profile.phone,
+                'gender': {
+                    'id': 1 if profile.gender == 'male' else 2,
+                    'name': 'M' if profile.gender == 'male' else 'F'
+                }
+            })
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
