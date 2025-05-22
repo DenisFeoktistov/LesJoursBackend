@@ -33,6 +33,27 @@ class CartView(APIView):
         try:
             user = get_object_or_404(User, id=user_id)
             cart = Cart(request)
+            
+            # Handle URL parameters if provided
+            if product_unit_id is not None and guests_amount is not None:
+                try:
+                    event = Event.objects.get(id=product_unit_id)
+                    # Check total seats including those already in cart
+                    cart_quantity = 0
+                    for item in cart.cart.values():
+                        if item['type'] == 'event' and str(item['id']) == str(product_unit_id):
+                            cart_quantity += item.get('quantity', 0)
+                    if event.get_remaining_seats() < cart_quantity + guests_amount:
+                        return Response({'error': 'Not enough seats available'}, status=status.HTTP_400_BAD_REQUEST)
+                    cart.add('event', product_unit_id, guests_amount)
+                    return Response(cart.get_cart_data())
+                except Event.DoesNotExist:
+                    return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Handle request body data only if it's not empty
+            if not request.data:
+                return Response({'error': 'No data provided'}, status=status.HTTP_400_BAD_REQUEST)
+                
             data = request.data
             item_type = data.get('type')
             item_id = data.get('id')

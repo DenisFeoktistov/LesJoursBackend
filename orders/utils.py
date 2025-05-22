@@ -153,12 +153,19 @@ class Cart:
                     # Check availability
                     availability = event.get_remaining_seats() >= guests_amount
                     
+                    # Корректная обработка bucket_link
+                    bucket_links = masterclass.bucket_link
+                    if isinstance(bucket_links, str):
+                        bucket_links = [bucket_links]
+                    elif not isinstance(bucket_links, list):
+                        bucket_links = list(bucket_links)
+
                     items.append({
                         'id': event.id,
                         'name': masterclass.name,
                         'in_wishlist': False,  # TODO: Implement wishlist functionality
                         'availability': availability,
-                        'bucket_link': [{'url': url} for url in masterclass.bucket_link],
+                        'bucket_link': [{'url': url} for url in bucket_links],
                         'slug': masterclass.slug,
                         'guestsAmount': guests_amount,
                         'totalPrice': float(masterclass.final_price * guests_amount),

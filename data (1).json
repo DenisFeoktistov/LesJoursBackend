@@ -16,7 +16,7 @@
         ],
         "location": "м. Новокузнецкая",
         "max_seats": 8,
-        "age_restriction": 12,
+        "age_restriction": 6,
         "duration": 120,
         "parameters": {
             "parameters": {
@@ -27,7 +27,7 @@
                     "+7 (983) 285-83-99"
                 ],
                 "Возраст": [
-                    "12+"
+                    "6+"
                 ],
                 "Продолжительность": [
                     "2 часа"
@@ -162,7 +162,7 @@
         ],
         "location": "м. Новокузнецкая",
         "max_seats": 8,
-        "age_restriction": 12,
+        "age_restriction": 6,
         "duration": 90,
         "parameters": {
             "parameters": {
@@ -173,7 +173,7 @@
                     "+7 (983) 285-83-99"
                 ],
                 "Возраст": [
-                    "12+"
+                    "6+"
                 ],
                 "Продолжительность": [
                     "1.5 часа"
@@ -377,7 +377,7 @@
         ],
         "location": "м. Новокузнецкая",
         "max_seats": 8,
-        "age_restriction": 12,
+        "age_restriction": 6,
         "duration": 90,
         "parameters": {
             "parameters": {
@@ -388,7 +388,7 @@
                     "+7 (983) 285-83-99"
                 ],
                 "Возраст": [
-                    "12+"
+                    "6+"
                 ],
                 "Продолжительность": [
                     "1.5 часа"
@@ -600,7 +600,7 @@
         ],
         "location": "м. Новокузнецкая",
         "max_seats": 8,
-        "age_restriction": 10,
+        "age_restriction": 12,
         "duration": 120,
         "parameters": {
             "parameters": {
@@ -611,7 +611,7 @@
                     "+7 (983) 285-83-99"
                 ],
                 "Возраст": [
-                    "10+"
+                    "12+"
                 ],
                 "Продолжительность": [
                     "2 часа"
@@ -761,7 +761,7 @@
         ],
         "location": "м. Новокузнецкая",
         "max_seats": 8,
-        "age_restriction": 8,
+        "age_restriction": 6,
         "duration": 90,
         "parameters": {
             "parameters": {
@@ -772,7 +772,7 @@
                     "+7 (983) 285-83-99"
                 ],
                 "Возраст": [
-                    "8+"
+                    "6+"
                 ],
                 "Продолжительность": [
                     "1.5 часа"
@@ -899,7 +899,7 @@
         ],
         "location": "м. Новокузнецкая",
         "max_seats": 8,
-        "age_restriction": 10,
+        "age_restriction": 12,
         "duration": 90,
         "parameters": {
             "parameters": {
@@ -910,7 +910,7 @@
                     "+7 (983) 285-83-99"
                 ],
                 "Возраст": [
-                    "10+"
+                    "12+"
                 ],
                 "Продолжительность": [
                     "1.5 часа"
@@ -1175,7 +1175,7 @@
         ],
         "location": "м. Новокузнецкая",
         "max_seats": 8,
-        "age_restriction": 8,
+        "age_restriction": 6,
         "duration": 1,
         "parameters": {
             "parameters": {
@@ -1186,7 +1186,7 @@
                     "+7 (983) 285-83-99"
                 ],
                 "Возраст": [
-                    "8+"
+                    "6+"
                 ],
                 "Продолжительность": [
                     "1 час"
@@ -1382,7 +1382,7 @@
         ],
         "location": "м. Новокузнецкая",
         "max_seats": 8,
-        "age_restriction": 14,
+        "age_restriction": 16,
         "duration": 1.5,
         "parameters": {
             "parameters": {
@@ -1393,7 +1393,7 @@
                     "+7 (983) 285-83-99"
                 ],
                 "Возраст": [
-                    "14+"
+                    "16+"
                 ],
                 "Продолжительность": [
                     "1.5 часа"
@@ -1520,7 +1520,7 @@
         ],
         "location": "м. Новокузнецкая",
         "max_seats": 8,
-        "age_restriction": 14,
+        "age_restriction": 16,
         "duration": 1.5,
         "parameters": {
             "parameters": {
@@ -1531,7 +1531,7 @@
                     "+7 (983) 285-83-99"
                 ],
                 "Возраст": [
-                    "14+"
+                    "16+"
                 ],
                 "Продолжительность": [
                     "1.5 часа"
