@@ -23,7 +23,7 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES)
     birth_date = models.DateField(null=True, blank=True)
-    phone = models.CharField(max_length=15, null=True, blank=True)
+    phone = models.CharField(max_length=20, null=True, blank=True)
     is_mailing_list = models.BooleanField(default=False)
     cart = models.JSONField(default=dict, blank=True)
     favorite_masterclasses = models.ManyToManyField('masterclasses.MasterClass', blank=True)
