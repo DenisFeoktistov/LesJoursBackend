@@ -16,8 +16,11 @@ from masterclasses.models import MasterClass
 from masterclasses.api.serializers import MasterClassSerializer
 from rest_framework import serializers
 from rest_framework_simplejwt.exceptions import TokenError
+import logging
 
 User = get_user_model()
+
+logger = logging.getLogger(__name__)
 
 class RegistrationView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -456,11 +459,12 @@ class UserInfoView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, id):
+        logger.debug(f"GET UserInfoView: Получен запрос для пользователя ID={id}")
         try:
             user = User.objects.get(id=id)
             profile = user.profile
             
-            return Response({
+            response_data = {
                 'id': user.id,
                 'formatted_happy_birthday_date': profile.birth_date.strftime('%d.%m.%Y') if profile.birth_date else None,
                 'first_name': user.first_name,
@@ -471,14 +475,29 @@ class UserInfoView(APIView):
                     'id': 1 if profile.gender == 'male' else 2,
                     'name': 'M' if profile.gender == 'male' else 'F'
                 }
-            })
+            }
+            logger.debug(f"GET UserInfoView: Возвращены данные для пользователя ID={id}: {response_data}")
+            return Response(response_data)
         except User.DoesNotExist:
+            logger.warning(f"GET UserInfoView: Пользователь с ID={id} не найден")
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
     def post(self, request, id):
+        logger.debug(f"POST UserInfoView: Получен запрос обновления данных для пользователя ID={id}. Данные: {request.data}")
         try:
             user = User.objects.get(id=id)
             profile = user.profile
+            
+            # Сохраняем старые значения для логирования
+            old_values = {
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'username': user.username,
+                'gender': profile.gender,
+                'phone': profile.phone,
+                'birth_date': profile.birth_date.strftime('%d.%m.%Y') if profile.birth_date else None
+            }
             
             # Update user fields
             user.first_name = request.data.get('first_name', user.first_name)
@@ -500,13 +519,30 @@ class UserInfoView(APIView):
                 try:
                     profile.birth_date = datetime.strptime(request.data['date'], '%d.%m.%Y').date()
                 except ValueError:
+                    logger.error(f"POST UserInfoView: Некорректный формат даты: {request.data['date']}")
                     return Response({'error': 'Invalid date format'}, status=status.HTTP_400_BAD_REQUEST)
             
             user.save()
             profile.save()
             
+            # Собираем новые значения для логирования
+            new_values = {
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'username': user.username,
+                'gender': profile.gender,
+                'phone': profile.phone,
+                'birth_date': profile.birth_date.strftime('%d.%m.%Y') if profile.birth_date else None
+            }
+            
+            # Логируем изменения
+            changes = {field: {'old': old_values[field], 'new': new_values[field]} 
+                      for field in old_values if old_values[field] != new_values[field]}
+            logger.info(f"POST UserInfoView: Обновлены данные пользователя ID={id}. Изменения: {changes}")
+            
             # Return the same format as GET method
-            return Response({
+            response_data = {
                 'id': user.id,
                 'formatted_happy_birthday_date': profile.birth_date.strftime('%d.%m.%Y') if profile.birth_date else None,
                 'first_name': user.first_name,
@@ -517,8 +553,11 @@ class UserInfoView(APIView):
                     'id': 1 if profile.gender == 'male' else 2,
                     'name': 'M' if profile.gender == 'male' else 'F'
                 }
-            })
+            }
+            logger.debug(f"POST UserInfoView: Возвращаемые данные: {response_data}")
+            return Response(response_data)
         except User.DoesNotExist:
+            logger.warning(f"POST UserInfoView: Пользователь с ID={id} не найден")
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class UserLastSeenView(APIView):
