@@ -45,6 +45,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('api/auth/', include('rest_framework.urls')),
     path('api/user/', include('users.api.urls')),
+    path('api/wishlist/', include('users.api.wishlist_urls')),
     path('api/masterclasses/', include('masterclasses.api.urls')),
     path('api/order/', include('orders.api.urls')),
     path('api/certificates/', include('certificates.api.urls')),
