@@ -10,7 +10,9 @@ from .serializers import MasterClassSerializer, EventSerializer
 from .filters import MasterClassFilter
 from rest_framework import status
 from django.db import models
+import logging
 
+logger = logging.getLogger(__name__)
 
 class MasterClassViewSet(viewsets.ModelViewSet):
     queryset = MasterClass.objects.all()
@@ -36,7 +38,23 @@ class MasterClassViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
             return MasterClass.objects.none()
-        return super().get_queryset()
+        
+        queryset = MasterClass.objects.all()
+        
+        # Получаем и обрабатываем параметр сортировки
+        ordering = self.request.query_params.get('ordering', None)
+        if ordering:
+            logger.debug(f"Applying ordering: {ordering}")
+            if ordering == 'popular':
+                queryset = queryset.order_by('-score_product_page')
+            elif ordering == 'new':
+                queryset = queryset.order_by('-created_at')
+            elif ordering == 'min_price':
+                queryset = queryset.order_by('final_price')
+            elif ordering == 'max_price':
+                queryset = queryset.order_by('-final_price')
+        
+        return queryset
 
     def get_object(self):
         obj = get_object_or_404(self.get_queryset(), slug=self.kwargs["slug"])
@@ -45,6 +63,13 @@ class MasterClassViewSet(viewsets.ModelViewSet):
 
     @swagger_auto_schema(
         operation_description="List all masterclasses",
+        manual_parameters=[
+            openapi.Parameter('ordering', openapi.IN_QUERY, description="Sort results (popular, new, min_price, max_price)", type=openapi.TYPE_STRING),
+            openapi.Parameter('age', openapi.IN_QUERY, description="Filter by age restriction (6, 12, 16)", type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_INTEGER)),
+            openapi.Parameter('is_sale', openapi.IN_QUERY, description="Filter by discount availability", type=openapi.TYPE_BOOLEAN),
+            openapi.Parameter('price_min', openapi.IN_QUERY, description="Filter by minimum price", type=openapi.TYPE_NUMBER),
+            openapi.Parameter('price_max', openapi.IN_QUERY, description="Filter by maximum price", type=openapi.TYPE_NUMBER),
+        ],
         responses={
             200: openapi.Response(
                 description="List of masterclasses",
@@ -53,6 +78,9 @@ class MasterClassViewSet(viewsets.ModelViewSet):
         }
     )
     def list(self, request, *args, **kwargs):
+        # Логирование всех параметров запроса для отладки
+        logger.debug(f"Request parameters: {request.query_params}")
+        
         queryset = self.filter_queryset(self.get_queryset())
         total_count = queryset.count()
         

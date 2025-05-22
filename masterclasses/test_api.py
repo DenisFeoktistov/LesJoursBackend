@@ -6,6 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import MasterClass, Event
 from django.contrib.auth import get_user_model
+from time import sleep
 
 User = get_user_model()
 
@@ -416,6 +417,175 @@ class MasterClassAPITest(TestCase):
         # Verify ordering
         prices = [item['price']['final_price'] for item in response.data['results']]
         self.assertEqual(prices, sorted(prices))  # Should be in ascending order
+
+    def test_filter_by_age(self):
+        """Тест фильтрации мастер-классов по возрастному ограничению"""
+        # Очищаем существующие мастер-классы перед тестом
+        MasterClass.objects.all().delete()
+        
+        # Создаем мастер-классы с разными возрастными ограничениями
+        mc1 = MasterClass.objects.create(
+            name="МК для детей",
+            short_description="Для маленьких",
+            age_restriction=6,
+            start_price=1000,
+            final_price=1000
+        )
+        mc2 = MasterClass.objects.create(
+            name="МК для подростков",
+            short_description="Для средних",
+            age_restriction=12,
+            start_price=2000,
+            final_price=2000
+        )
+        mc3 = MasterClass.objects.create(
+            name="МК для старших",
+            short_description="Для взрослых",
+            age_restriction=16,
+            start_price=3000,
+            final_price=3000
+        )
+
+        # Проверяем фильтр по одному возрасту
+        response = self.client.get(reverse('masterclass-list') + '?age=6')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['id'], mc1.id)
+
+        # Проверяем фильтр по нескольким возрастам
+        response = self.client.get(reverse('masterclass-list') + '?age=6&age=12')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2)
+        
+        # Сбрасываем между тестами
+        self.client = APIClient()
+
+    def test_filter_by_discount(self):
+        """Тест фильтрации мастер-классов по наличию скидки"""
+        # Очищаем существующие мастер-классы перед тестом
+        MasterClass.objects.all().delete()
+        
+        # Создаем мастер-классы со скидкой и без
+        mc1 = MasterClass.objects.create(
+            name="МК со скидкой",
+            short_description="Со скидкой",
+            start_price=2000,
+            final_price=1500
+        )
+        mc2 = MasterClass.objects.create(
+            name="МК без скидки",
+            short_description="Без скидки",
+            start_price=2000,
+            final_price=2000
+        )
+
+        # Проверяем фильтр по наличию скидки
+        response = self.client.get(reverse('masterclass-list') + '?is_sale=true')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['id'], mc1.id)
+
+        # Проверяем фильтр по отсутствию скидки
+        response = self.client.get(reverse('masterclass-list') + '?is_sale=false')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['id'], mc2.id)
+        
+        # Сбрасываем между тестами
+        self.client = APIClient()
+
+    def test_filter_by_price(self):
+        """Тест фильтрации мастер-классов по цене"""
+        # Очищаем существующие мастер-классы перед тестом
+        MasterClass.objects.all().delete()
+        
+        # Создаем мастер-классы с разными ценами
+        mc1 = MasterClass.objects.create(
+            name="МК дешевый",
+            short_description="Дешевый",
+            start_price=1000,
+            final_price=1000
+        )
+        mc2 = MasterClass.objects.create(
+            name="МК средний",
+            short_description="Средний",
+            start_price=3000,
+            final_price=3000
+        )
+        mc3 = MasterClass.objects.create(
+            name="МК дорогой",
+            short_description="Дорогой",
+            start_price=5000,
+            final_price=5000
+        )
+
+        # Проверяем фильтр по минимальной цене
+        response = self.client.get(reverse('masterclass-list') + '?price_min=2000')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2)
+        
+        # Проверяем фильтр по максимальной цене
+        response = self.client.get(reverse('masterclass-list') + '?price_max=4000')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2)
+        
+        # Проверяем фильтр по диапазону цен
+        response = self.client.get(reverse('masterclass-list') + '?price_min=2000&price_max=4000')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['id'], mc2.id)
+        
+        # Сбрасываем между тестами
+        self.client = APIClient()
+
+    def test_sorting_options(self):
+        """Тест сортировки мастер-классов"""
+        # Очищаем существующие мастер-классы перед тестом
+        MasterClass.objects.all().delete()
+        
+        # Создаем мастер-классы с разными параметрами
+        mc1 = MasterClass.objects.create(
+            name="МК A",
+            short_description="Описание A",
+            start_price=1000,
+            final_price=1000,
+            score_product_page=30,  # Низкая популярность
+        )
+        mc2 = MasterClass.objects.create(
+            name="МК B",
+            short_description="Описание B",
+            start_price=3000,
+            final_price=3000,
+            score_product_page=70,  # Средняя популярность
+        )
+        mc3 = MasterClass.objects.create(
+            name="МК C",
+            short_description="Описание C",
+            start_price=5000,
+            final_price=5000,
+            score_product_page=90,  # Высокая популярность
+        )
+
+        # Проверяем сортировку по популярности (score_product_page по убыванию)
+        response = self.client.get(reverse('masterclass-list') + '?ordering=popular')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result_ids = [item['id'] for item in response.data['results']]
+        self.assertEqual(result_ids, [mc3.id, mc2.id, mc1.id])
+        
+        # Проверяем сортировку по возрастанию цены
+        response = self.client.get(reverse('masterclass-list') + '?ordering=min_price')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result_ids = [item['id'] for item in response.data['results']]
+        self.assertEqual(result_ids, [mc1.id, mc2.id, mc3.id])
+        
+        # Проверяем сортировку по убыванию цены
+        response = self.client.get(reverse('masterclass-list') + '?ordering=max_price')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result_ids = [item['id'] for item in response.data['results']]
+        self.assertEqual(result_ids, [mc3.id, mc2.id, mc1.id])
+        
+        # Сбрасываем между тестами
+        self.client = APIClient()
 
 
 class EventAPITest(TestCase):

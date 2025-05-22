@@ -447,18 +447,8 @@ class CustomTokenRefreshView(APIView):
             token = RefreshToken(refresh_token)
             access_token = str(token.access_token)
             
-            # Получаем пользователя из токена
-            user_id = token.payload.get('user_id')
-            user = User.objects.get(id=user_id)
-            
             return Response({
-                'user_id': user.id,
-                'access': str(access_token),
-                'refresh': str(token),
-                'gender': user.profile.gender,
-                'username': user.username,
-                'first_name': user.first_name,
-                'last_name': user.last_name
+                'access': access_token
             })
         except TokenError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

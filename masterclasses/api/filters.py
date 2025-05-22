@@ -6,41 +6,41 @@ from django.db import models
 class MasterClassFilter(filters.FilterSet):
     min_price = filters.NumberFilter(field_name="final_price", lookup_expr='gte')
     max_price = filters.NumberFilter(field_name="final_price", lookup_expr='lte')
-    has_discount = filters.BooleanFilter(method='filter_has_discount')
-    age_restrictions = filters.CharFilter(method='filter_age_restrictions')
+    price_min = filters.NumberFilter(field_name="final_price", lookup_expr='gte')
+    price_max = filters.NumberFilter(field_name="final_price", lookup_expr='lte')
+    is_sale = filters.BooleanFilter(method='filter_has_discount')
+    age = filters.MultipleChoiceFilter(
+        choices=[(6, '6+'), (12, '12+'), (16, '16+')],
+        field_name='age_restriction',
+        method='filter_age_restrictions'
+    )
 
     class Meta:
         model = MasterClass
-        fields = ['min_price', 'max_price', 'has_discount', 'age_restrictions']
+        fields = ['min_price', 'max_price', 'price_min', 'price_max', 'is_sale', 'age']
 
     def filter_has_discount(self, queryset, name, value):
         if value is True:
             return queryset.filter(final_price__lt=models.F('start_price'))
         elif value is False:
-            return queryset.filter(final_price__gte=models.F('start_price'))
-        # Если значение невалидно, возвращаем пустой queryset
-        return queryset.none()
+            return queryset.filter(final_price=models.F('start_price'))
+        return queryset
 
     def filter_age_restrictions(self, queryset, name, value):
         if not value:
             return queryset
-        age_values = value.split(',')
-        age_mapping = {
-            '6+': 6,
-            '12+': 12,
-            '16+': 16,
-            '6': 6,
-            '12': 12,
-            '16': 16
-        }
-        age_filters = []
-        for age in age_values:
-            age = age.strip()
-            if age in age_mapping:
-                age_filters.append(age_mapping[age])
-            elif age.isdigit() and int(age) in (6, 12, 16):
-                age_filters.append(int(age))
-        if age_filters:
-            return queryset.filter(age_restriction__in=age_filters)
-        # Если невалидные значения — возвращаем пустой queryset
-        return queryset.none() 
+            
+        # Конвертируем значения в числа, если они переданы как строки
+        valid_ages = []
+        for age in value:
+            try:
+                if isinstance(age, str):
+                    age = age.replace('+', '')
+                valid_ages.append(int(age))
+            except (ValueError, TypeError):
+                pass
+                
+        if valid_ages:
+            return queryset.filter(age_restriction__in=valid_ages)
+            
+        return queryset 
