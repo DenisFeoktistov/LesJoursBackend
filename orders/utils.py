@@ -61,10 +61,38 @@ class Cart:
         return True
 
     def remove(self, item_type, item_id):
-        item_key = f"{item_type}_{item_id}"
-        if item_key in self.cart:
-            del self.cart[item_key]
-            self.save()
+        print(f"[DEBUG] Attempting to remove item - type: {item_type}, id: {item_id}")
+        print(f"[DEBUG] Current cart contents: {self.cart}")
+        
+        # For certificates, ensure we're using the correct key format
+        if item_type == 'certificate':
+            # Try both formats: with and without decimal point
+            possible_keys = [
+                f"{item_type}_{item_id}",  # Original format
+                f"{item_type}_{float(item_id)}",  # With decimal point
+                f"{item_type}_{int(float(item_id))}"  # Without decimal point
+            ]
+            print(f"[DEBUG] Trying possible keys for certificate: {possible_keys}")
+            
+            for key in possible_keys:
+                if key in self.cart:
+                    print(f"[DEBUG] Found certificate with key: {key}")
+                    del self.cart[key]
+                    self.save()
+                    print(f"[DEBUG] Certificate removed. New cart contents: {self.cart}")
+                    return
+            
+            print(f"[DEBUG] No matching certificate found in cart")
+        else:
+            # For other items (like events), use the original logic
+            item_key = f"{item_type}_{item_id}"
+            if item_key in self.cart:
+                print(f"[DEBUG] Found item to remove: {self.cart[item_key]}")
+                del self.cart[item_key]
+                self.save()
+                print(f"[DEBUG] Item removed. New cart contents: {self.cart}")
+            else:
+                print(f"[DEBUG] Item not found in cart")
 
     def update(self, item_type, item_id, quantity):
         item_key = f"{item_type}_{item_id}"
