@@ -140,6 +140,18 @@ class CartView(APIView):
         try:
             user = get_object_or_404(User, id=user_id)
             cart = Cart(request)
+            
+            # Handle URL parameters if provided
+            if product_unit_id is not None:
+                if request.query_params.get('is_certificate') == 'true':
+                    # Handle certificate removal
+                    cart.remove('certificate', product_unit_id)
+                else:
+                    # Handle event removal
+                    cart.remove('event', product_unit_id)
+                return Response(cart.get_cart_data())
+            
+            # Handle request body data
             data = request.data
             item_type = data.get('type')
             item_id = data.get('id')
