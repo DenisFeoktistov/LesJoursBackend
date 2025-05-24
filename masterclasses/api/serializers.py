@@ -164,13 +164,33 @@ class ProductUnitSerializer(serializers.ModelSerializer):
         }
 
     def get_address(self, obj):
-        if 'parameters' in obj.parameters and 'Адрес' in obj.parameters['parameters']:
-            return obj.parameters['parameters']['Адрес'][0]
+        try:
+            params = obj.parameters
+            if isinstance(params, dict):
+                params_inner = params.get('parameters', {})
+                if isinstance(params_inner, dict):
+                    address = params_inner.get('Адрес', [''])
+                    if address and isinstance(address, list):
+                        return address[0]
+            # Для отладки
+            print(f"[DEBUG] parameters for address: {params}")
+        except Exception as e:
+            print(f"[ERROR] get_address: {e}")
         return ''
 
     def get_contacts(self, obj):
-        if 'parameters' in obj.parameters and 'Контакты' in obj.parameters['parameters']:
-            return obj.parameters['parameters']['Контакты'][0]
+        try:
+            params = obj.parameters
+            if isinstance(params, dict):
+                params_inner = params.get('parameters', {})
+                if isinstance(params_inner, dict):
+                    contacts = params_inner.get('Контакты', [''])
+                    if contacts and isinstance(contacts, list):
+                        return contacts[0]
+            # Для отладки
+            print(f"[DEBUG] parameters for contacts: {params}")
+        except Exception as e:
+            print(f"[ERROR] get_contacts: {e}")
         return ''
 
     def get_type(self, obj):
