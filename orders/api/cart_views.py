@@ -14,8 +14,10 @@ from orders.models import Order, OrderItem
 from orders.utils import Cart
 from orders.api.serializers import OrderSerializer
 import uuid
+import logging
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class CartView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -54,9 +56,9 @@ class CartView(APIView):
                         event = Event.objects.get(id=product_unit_id)
                         # Check total seats including those already in cart
                         cart_quantity = 0
-                        for item in cart.cart.values():
-                            if item['type'] == 'event' and str(item['id']) == str(product_unit_id):
-                                cart_quantity += item.get('quantity', 0)
+                        for item in cart.get_items():
+                            if item.get('type') == 'master_class' and str(item.get('id')) == str(product_unit_id):
+                                cart_quantity += item.get('guestsAmount', 0)
                         if event.get_remaining_seats() < cart_quantity + guests_amount:
                             return Response({'error': 'Not enough seats available'}, status=status.HTTP_400_BAD_REQUEST)
                         cart.add('event', product_unit_id, guests_amount)
@@ -84,9 +86,9 @@ class CartView(APIView):
                     event = Event.objects.get(id=item_id)
                     # Check total seats including those already in cart
                     cart_quantity = 0
-                    for item in cart.cart.values():
-                        if item['type'] == 'event' and str(item['id']) == str(item_id):
-                            cart_quantity += item.get('quantity', 0)
+                    for item in cart.get_items():
+                        if item.get('type') == 'master_class' and str(item.get('id')) == str(item_id):
+                            cart_quantity += item.get('guestsAmount', 0)
                     if event.get_remaining_seats() < cart_quantity + quantity:
                         return Response({'error': 'Not enough seats available'}, status=status.HTTP_400_BAD_REQUEST)
                 except Event.DoesNotExist:
@@ -123,9 +125,9 @@ class CartView(APIView):
                 try:
                     event = Event.objects.get(id=item_id)
                     cart_quantity = 0
-                    for item in cart.cart.values():
-                        if item['type'] == 'event' and str(item['id']) == str(item_id):
-                            cart_quantity += item.get('quantity', 0)
+                    for item in cart.get_items():
+                        if item.get('type') == 'master_class' and str(item.get('id')) == str(item_id):
+                            cart_quantity += item.get('guestsAmount', 0)
                     if event.get_remaining_seats() - cart_quantity < quantity:
                         return Response({'error': 'Not enough seats available'}, status=status.HTTP_400_BAD_REQUEST)
                 except Event.DoesNotExist:
@@ -280,15 +282,27 @@ class CheckoutOrderView(APIView):
 
             # Get cart from session
             cart = Cart(request)
-            if not cart.cart:
+            cart_items = []
+            if hasattr(cart, 'is_authenticated') and cart.is_authenticated:
+                cart_items = list(cart.cart_obj.items.all())
+            else:
+                cart_items = cart.get_items()
+            if not cart_items:
                 return Response(
                     {'error': 'Cart is empty'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
             # Validate cart items availability
-            for item in cart.get_items():
-                if item['type'] == 'event':
+            for item in cart_items:
+                if hasattr(item, 'event') and item.event:
+                    event = item.event
+                    if event.get_remaining_seats() < item.quantity:
+                        return Response(
+                            {'error': f"Not enough seats available for {event.masterclass.name}"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                elif isinstance(item, dict) and item.get('type') == 'event':
                     event = get_object_or_404(Event, id=item['id'])
                     if event.get_remaining_seats() < item['quantity']:
                         return Response(
@@ -312,26 +326,46 @@ class CheckoutOrderView(APIView):
                 )
 
                 # Create order items
-                for item in cart.get_items():
-                    if item['type'] == 'event':
+                for item in cart_items:
+                    if hasattr(item, 'event') and item.event:
+                        event = item.event
+                        event.available_seats -= item.quantity
+                        event.save()
+                        OrderItem.objects.create(
+                            order=order,
+                            masterclass=event.masterclass,
+                            quantity=item.quantity,
+                            price=event.masterclass.final_price,
+                            event=event
+                        )
+                    elif hasattr(item, 'certificate') and item.certificate:
+                        amount = item.certificate.amount
+                        OrderItem.objects.create(
+                            order=order,
+                            masterclass=None,
+                            quantity=item.quantity,
+                            price=amount,
+                            is_certificate=True
+                        )
+                    elif isinstance(item, dict) and item.get('type') == 'event':
                         event = get_object_or_404(Event, id=item['id'])
-                        # Update available seats
                         event.available_seats -= item['quantity']
                         event.save()
-                        # Create order item
                         OrderItem.objects.create(
                             order=order,
                             masterclass=event.masterclass,
                             quantity=item['quantity'],
-                            price=event.masterclass.final_price
+                            price=event.masterclass.final_price,
+                            event=event
                         )
-                    elif item['type'] == 'certificate':
+                    elif isinstance(item, dict) and item.get('type') == 'certificate':
                         amount = Decimal(item['amount'])
                         OrderItem.objects.create(
                             order=order,
                             masterclass=None,
                             quantity=item['quantity'],
-                            price=amount
+                            price=amount,
+                            is_certificate=True
                         )
 
                 # Clear cart after successful order creation

@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from masterclasses.models import MasterClass
+from masterclasses.models import MasterClass, Event
 
 
 class Order(models.Model):
@@ -63,14 +63,41 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     masterclass = models.ForeignKey(MasterClass, on_delete=models.CASCADE, null=True, blank=True)
+    event = models.ForeignKey('masterclasses.Event', on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    is_certificate = models.BooleanField(default=False)
 
     def __str__(self):
+        if self.is_certificate:
+            return f"Certificate x {self.quantity}"
         return f"{self.masterclass.name} x {self.quantity}"
 
     def save(self, *args, **kwargs):
-        if not self.price:
+        if not self.price and self.masterclass:
             self.price = self.masterclass.final_price if hasattr(self.masterclass, 'final_price') else self.masterclass.start_price
         super().save(*args, **kwargs)
         self.order.calculate_total()
+
+
+class Cart(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='cart')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Cart for {self.user.email}"
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, null=True, blank=True)
+    certificate = models.ForeignKey('certificates.Certificate', on_delete=models.CASCADE, null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=1)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        if self.event:
+            return f"Event {self.event.id} x {self.quantity}"
+        if self.certificate:
+            return f"Certificate {self.certificate.id} x {self.quantity}"
+        return f"CartItem x {self.quantity}"

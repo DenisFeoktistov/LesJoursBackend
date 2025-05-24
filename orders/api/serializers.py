@@ -3,6 +3,10 @@ from ..models import Order, OrderItem
 from masterclasses.models import MasterClass
 from certificates.models import Certificate
 from django.utils import timezone
+from decimal import Decimal
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -139,27 +143,30 @@ class OrderSerializer(serializers.ModelSerializer):
                  'address', 'contacts']
 
     def get_email(self, obj):
-        return obj.user.email
+        return obj.email or obj.user.email
 
     def get_phone(self, obj):
-        return obj.user.phone if hasattr(obj.user, 'phone') else None
+        return obj.phone or (obj.user.phone if hasattr(obj.user, 'phone') else None)
 
     def get_surname(self, obj):
-        return obj.user.surname if hasattr(obj.user, 'surname') else None
+        return obj.surname or (obj.user.surname if hasattr(obj.user, 'surname') else None)
 
     def get_name(self, obj):
-        return obj.user.name if hasattr(obj.user, 'name') else None
+        return obj.name or (obj.user.name if hasattr(obj.user, 'name') else None)
 
     def get_telegram(self, obj):
-        return obj.user.telegram if hasattr(obj.user, 'telegram') else None
+        return obj.telegram or (obj.user.telegram if hasattr(obj.user, 'telegram') else None)
 
     def get_order_units(self, obj):
         items = []
+        logger.info(f"OrderSerializer.get_order_units: order_id={obj.id}, items_count={obj.items.count()}")
         for item in obj.items.all():
+            logger.info(f"OrderSerializer.get_order_units: item_id={item.id}, is_certificate={item.is_certificate}, masterclass={item.masterclass}, event={getattr(item, 'event', None)}")
             if item.masterclass is None:
                 items.append(CertificateOrderItemSerializer(item).data)
             else:
                 items.append(OrderItemSerializer(item).data)
+        logger.info(f"OrderSerializer.get_order_units: result_count={len(items)}")
         return items
 
     def get_formatted_date(self, obj):
@@ -169,13 +176,32 @@ class OrderSerializer(serializers.ModelSerializer):
         return f"{obj.id:06d}"
 
     def get_total_amount(self, obj):
-        return float(sum(item.price * item.quantity for item in obj.items.all()))
+        """Calculate total amount without any discounts"""
+        total = Decimal('0')
+        for item in obj.items.all():
+            if item.masterclass:
+                total += item.masterclass.start_price * item.quantity
+            else:
+                # For certificates, use the price directly
+                total += item.price * item.quantity
+        return float(total)
 
     def get_final_amount(self, obj):
-        return float(obj.total_price)
+        """Calculate final amount after all discounts"""
+        total = Decimal('0')
+        for item in obj.items.all():
+            if item.masterclass:
+                total += item.masterclass.final_price * item.quantity
+            else:
+                # For certificates, use the price directly
+                total += item.price * item.quantity
+        return float(total)
 
     def get_total_sale(self, obj):
-        return float(self.get_total_amount(obj) - self.get_final_amount(obj))
+        """Calculate total sale amount"""
+        total_amount = self.get_total_amount(obj)
+        final_amount = self.get_final_amount(obj)
+        return float(total_amount - final_amount)
 
     def get_address(self, obj):
         # Get address from the first masterclass in the order
@@ -183,12 +209,10 @@ class OrderSerializer(serializers.ModelSerializer):
             if item.masterclass:
                 params = item.masterclass.parameters
                 if isinstance(params, dict):
-                    # Вложенная структура
                     if 'parameters' in params and isinstance(params['parameters'], dict):
                         address = params['parameters'].get('Адрес', [''])
                         if address and isinstance(address, list):
                             return address[0]
-                    # Плоская структура
                     elif 'Адрес' in params:
                         address = params['Адрес']
                         if isinstance(address, list):
@@ -202,12 +226,10 @@ class OrderSerializer(serializers.ModelSerializer):
             if item.masterclass:
                 params = item.masterclass.parameters
                 if isinstance(params, dict):
-                    # Вложенная структура
                     if 'parameters' in params and isinstance(params['parameters'], dict):
                         contacts = params['parameters'].get('Контакты', [''])
                         if contacts and isinstance(contacts, list):
                             return contacts[0]
-                    # Плоская структура
                     elif 'Контакты' in params:
                         contacts = params['Контакты']
                         if isinstance(contacts, list):
