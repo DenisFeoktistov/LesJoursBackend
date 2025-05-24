@@ -68,13 +68,27 @@ def fetch_product_units(request):
                 masterclass = event.masterclass
                 address = masterclass.parameters.get('Адрес', [''])[0]
                 contacts = masterclass.parameters.get('Контакты', [''])[0]
-                
+
+                # Корректная обработка bucket_link
+                bucket_links = masterclass.bucket_link
+                if isinstance(bucket_links, str):
+                    bucket_links = [{'url': bucket_links}]
+                elif isinstance(bucket_links, list):
+                    if all(isinstance(x, dict) and 'url' in x for x in bucket_links):
+                        bucket_links = bucket_links
+                    elif all(isinstance(x, str) for x in bucket_links):
+                        bucket_links = [{'url': x} for x in bucket_links]
+                    else:
+                        bucket_links = [{'url': str(x)} for x in bucket_links]
+                else:
+                    bucket_links = [{'url': str(bucket_links)}]
+
                 result.append({
                     'id': event.id,
                     'name': masterclass.name,
                     'in_wishlist': False,
                     'availability': event.get_remaining_seats() >= int(guests_amount),
-                    'bucket_link': [{'url': url} for url in masterclass.bucket_link],
+                    'bucket_link': bucket_links,
                     'slug': masterclass.slug,
                     'guestsAmount': int(guests_amount),
                     'totalPrice': float(masterclass.final_price * int(guests_amount)),

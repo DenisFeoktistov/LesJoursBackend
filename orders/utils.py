@@ -157,6 +157,9 @@ class Cart:
                     # Check availability
                     availability = event.get_remaining_seats() >= guests_amount
                     
+                    # DEBUG: логируем значение и тип bucket_link в файл
+                    with open('debug_bucket_links.log', 'a', encoding='utf-8') as f:
+                        f.write(f"bucket_links: {repr(masterclass.bucket_link)} type: {type(masterclass.bucket_link)}\n")
                     # Корректная обработка bucket_link
                     bucket_links = masterclass.bucket_link
                     if isinstance(bucket_links, str):
@@ -164,6 +167,8 @@ class Cart:
                     elif isinstance(bucket_links, list):
                         if all(isinstance(x, dict) and 'url' in x for x in bucket_links):
                             bucket_links = bucket_links
+                        elif all(isinstance(x, str) for x in bucket_links):
+                            bucket_links = [{'url': x} for x in bucket_links]
                         else:
                             bucket_links = [{'url': str(x)} for x in bucket_links]
                     else:
