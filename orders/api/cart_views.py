@@ -13,6 +13,7 @@ from django.db import transaction
 from orders.models import Order, OrderItem
 from orders.utils import Cart
 from orders.api.serializers import OrderSerializer
+import uuid
 
 User = get_user_model()
 
@@ -40,7 +41,9 @@ class CartView(APIView):
                     # Handle certificate - product_unit_id is actually the amount
                     amount = str(product_unit_id)
                     if request.user.is_authenticated:
-                        certificate = Certificate.objects.create(user=request.user, amount=Decimal(amount), code='AUTO')
+                        # Generate unique code for certificate
+                        unique_code = f"AUTO_{uuid.uuid4().hex[:8]}"
+                        certificate = Certificate.objects.create(user=request.user, amount=Decimal(amount), code=unique_code)
                         cart.add('certificate', certificate.id, 1, user=request.user)
                     else:
                         cart.add('certificate', amount, 1)
