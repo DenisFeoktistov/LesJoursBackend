@@ -35,20 +35,31 @@ class CartView(APIView):
             cart = Cart(request)
             
             # Handle URL parameters if provided
-            if product_unit_id is not None and guests_amount is not None:
-                try:
-                    event = Event.objects.get(id=product_unit_id)
-                    # Check total seats including those already in cart
-                    cart_quantity = 0
-                    for item in cart.cart.values():
-                        if item['type'] == 'event' and str(item['id']) == str(product_unit_id):
-                            cart_quantity += item.get('quantity', 0)
-                    if event.get_remaining_seats() < cart_quantity + guests_amount:
-                        return Response({'error': 'Not enough seats available'}, status=status.HTTP_400_BAD_REQUEST)
-                    cart.add('event', product_unit_id, guests_amount)
+            if product_unit_id is not None:
+                if request.query_params.get('is_certificate') == 'true':
+                    # Handle certificate - product_unit_id is actually the amount
+                    amount = str(product_unit_id)
+                    if request.user.is_authenticated:
+                        certificate = Certificate.objects.create(user=request.user, amount=Decimal(amount), code='AUTO')
+                        cart.add('certificate', certificate.id, 1, user=request.user)
+                    else:
+                        cart.add('certificate', amount, 1)
                     return Response(cart.get_cart_data())
-                except Event.DoesNotExist:
-                    return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+                elif guests_amount is not None:
+                    # Handle event
+                    try:
+                        event = Event.objects.get(id=product_unit_id)
+                        # Check total seats including those already in cart
+                        cart_quantity = 0
+                        for item in cart.cart.values():
+                            if item['type'] == 'event' and str(item['id']) == str(product_unit_id):
+                                cart_quantity += item.get('quantity', 0)
+                        if event.get_remaining_seats() < cart_quantity + guests_amount:
+                            return Response({'error': 'Not enough seats available'}, status=status.HTTP_400_BAD_REQUEST)
+                        cart.add('event', product_unit_id, guests_amount)
+                        return Response(cart.get_cart_data())
+                    except Event.DoesNotExist:
+                        return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
             
             # Handle request body data only if it's not empty
             if not request.data:
