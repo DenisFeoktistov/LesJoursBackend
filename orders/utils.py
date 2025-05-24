@@ -4,15 +4,17 @@ from decimal import Decimal
 from masterclasses.models import MasterClass, Event
 from certificates.models import Certificate
 from django.utils import timezone
+from users.models import UserProfile
 
 class Cart:
     def __init__(self, request):
-        self.session = request.session
-        cart = self.session.get(settings.CART_SESSION_ID)
-        if not cart:
-            cart = self.session[settings.CART_SESSION_ID] = {}
-        self.cart = cart
-        self.promo_code = self.session.get('promo_code')
+        self.request = request
+        if request.user.is_authenticated:
+            self.profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            self.cart = self.profile.cart
+        else:
+            self.cart = {}
+            self.profile = None
 
     def add(self, item_type, item_id, quantity=1, user=None):
         if item_type == 'event':
@@ -74,29 +76,31 @@ class Cart:
             self.save()
 
     def clear(self):
-        del self.session[settings.CART_SESSION_ID]
-        self.session.pop('promo_code', None)
+        self.cart = {}
         self.save()
 
     def save(self):
-        self.session.modified = True
+        if self.profile:
+            self.profile.cart = self.cart
+            self.profile.save()
 
     def set_promo_code(self, promo_code):
-        self.session['promo_code'] = promo_code
-        self.promo_code = promo_code
+        if 'promo_code' not in self.cart:
+            self.cart['promo_code'] = {}
+        self.cart['promo_code'] = promo_code
         self.save()
 
     def get_promo_code(self):
-        return self.promo_code
+        return self.cart.get('promo_code')
 
     def get_total_amount(self):
         """Get total amount without any discounts"""
         total = Decimal('0')
         for item in self.cart.values():
-            if item['type'] == 'event':
+            if isinstance(item, dict) and item.get('type') == 'event':
                 event = Event.objects.get(id=item['id'])
                 total += event.masterclass.final_price * item['quantity']
-            elif item['type'] == 'certificate':
+            elif isinstance(item, dict) and item.get('type') == 'certificate':
                 # Для авторизованных пользователей ищем сертификат по id
                 try:
                     certificate = Certificate.objects.get(id=item['id'])
@@ -111,7 +115,7 @@ class Cart:
         """Get total sale amount"""
         total = Decimal('0')
         for item in self.cart.values():
-            if item['type'] == 'event':
+            if isinstance(item, dict) and item.get('type') == 'event':
                 event = Event.objects.get(id=item['id'])
                 if event.masterclass.start_price and event.masterclass.final_price:
                     total += (event.masterclass.start_price - event.masterclass.final_price) * item['quantity']
@@ -119,15 +123,15 @@ class Cart:
 
     def get_promo_sale(self):
         """Get total promo sale amount"""
-        if not self.promo_code:
+        if not self.get_promo_code():
             return Decimal('0')
             
         total = Decimal('0')
         for item in self.cart.values():
-            if item['type'] == 'event':
+            if isinstance(item, dict) and item.get('type') == 'event':
                 event = Event.objects.get(id=item['id'])
                 # Пример: 10% скидка по промокоду
-                if self.promo_code == 'TEST10':
+                if self.get_promo_code() == 'TEST10':
                     total += event.masterclass.final_price * item['quantity'] * Decimal('0.10')
         return total
 
@@ -142,7 +146,7 @@ class Cart:
     def get_items(self):
         items = []
         for item_key, item_data in self.cart.items():
-            if item_data['type'] == 'event':
+            if isinstance(item_data, dict) and item_data.get('type') == 'event':
                 try:
                     event = Event.objects.get(id=item_data['id'])
                     masterclass = event.masterclass
@@ -180,7 +184,7 @@ class Cart:
                     })
                 except Event.DoesNotExist:
                     continue
-            elif item_data['type'] == 'certificate':
+            elif isinstance(item_data, dict) and item_data.get('type') == 'certificate':
                 try:
                     certificate = Certificate.objects.get(id=item_data['id'])
                     items.append({
@@ -201,7 +205,7 @@ class Cart:
         """Get complete cart data in the required format"""
         return {
             'id': 0,  # Not used as per requirements
-            'promo_code': {'string_representation': self.promo_code} if self.promo_code else None,
+            'promo_code': {'string_representation': self.get_promo_code()} if self.get_promo_code() else None,
             'product_units': self.get_items(),
             'is_update': False,  # TODO: Implement update flag logic
             'total_amount': float(self.get_total_amount()),
