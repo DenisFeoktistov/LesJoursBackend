@@ -62,13 +62,37 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     def get_address(self, obj):
         if obj.masterclass:
-            return obj.masterclass.parameters.get('Адрес', [''])[0]
-        return None
+            params = obj.masterclass.parameters
+            if isinstance(params, dict):
+                # Вложенная структура
+                if 'parameters' in params and isinstance(params['parameters'], dict):
+                    address = params['parameters'].get('Адрес', [''])
+                    if address and isinstance(address, list):
+                        return address[0]
+                # Плоская структура
+                elif 'Адрес' in params:
+                    address = params['Адрес']
+                    if isinstance(address, list):
+                        return address[0]
+                    return address
+        return ''
 
     def get_contacts(self, obj):
         if obj.masterclass:
-            return obj.masterclass.parameters.get('Контакты', [''])[0]
-        return None
+            params = obj.masterclass.parameters
+            if isinstance(params, dict):
+                # Вложенная структура
+                if 'parameters' in params and isinstance(params['parameters'], dict):
+                    contacts = params['parameters'].get('Контакты', [''])
+                    if contacts and isinstance(contacts, list):
+                        return contacts[0]
+                # Плоская структура
+                elif 'Контакты' in params:
+                    contacts = params['Контакты']
+                    if isinstance(contacts, list):
+                        return contacts[0]
+                    return contacts
+        return ''
 
     def get_type(self, obj):
         return 'master_class'
@@ -154,17 +178,39 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_address(self, obj):
         # Get address from the first masterclass in the order
         for item in obj.items.all():
-            if item.masterclass and 'parameters' in item.masterclass.parameters:
-                if 'Адрес' in item.masterclass.parameters['parameters']:
-                    return item.masterclass.parameters['parameters']['Адрес'][0]
+            if item.masterclass:
+                params = item.masterclass.parameters
+                if isinstance(params, dict):
+                    # Вложенная структура
+                    if 'parameters' in params and isinstance(params['parameters'], dict):
+                        address = params['parameters'].get('Адрес', [''])
+                        if address and isinstance(address, list):
+                            return address[0]
+                    # Плоская структура
+                    elif 'Адрес' in params:
+                        address = params['Адрес']
+                        if isinstance(address, list):
+                            return address[0]
+                        return address
         return ''
 
     def get_contacts(self, obj):
         # Get contacts from the first masterclass in the order
         for item in obj.items.all():
-            if item.masterclass and 'parameters' in item.masterclass.parameters:
-                if 'Контакты' in item.masterclass.parameters['parameters']:
-                    return item.masterclass.parameters['parameters']['Контакты'][0]
+            if item.masterclass:
+                params = item.masterclass.parameters
+                if isinstance(params, dict):
+                    # Вложенная структура
+                    if 'parameters' in params and isinstance(params['parameters'], dict):
+                        contacts = params['parameters'].get('Контакты', [''])
+                        if contacts and isinstance(contacts, list):
+                            return contacts[0]
+                    # Плоская структура
+                    elif 'Контакты' in params:
+                        contacts = params['Контакты']
+                        if isinstance(contacts, list):
+                            return contacts[0]
+                        return contacts
         return ''
 
     def validate_items(self, value):

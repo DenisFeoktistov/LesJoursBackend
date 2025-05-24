@@ -188,8 +188,27 @@ class Cart:
                 try:
                     event = Event.objects.get(id=item_data['id'])
                     masterclass = event.masterclass
-                    address = masterclass.parameters.get('Адрес', [''])[0]
-                    contacts = masterclass.parameters.get('Контакты', [''])[0]
+                    params = masterclass.parameters
+                    address = ''
+                    contacts = ''
+                    if isinstance(params, dict):
+                        # Вложенная структура
+                        if 'parameters' in params and isinstance(params['parameters'], dict):
+                            address = params['parameters'].get('Адрес', [''])
+                            if address and isinstance(address, list):
+                                address = address[0]
+                            contacts = params['parameters'].get('Контакты', [''])
+                            if contacts and isinstance(contacts, list):
+                                contacts = contacts[0]
+                        # Плоская структура
+                        elif 'Адрес' in params:
+                            address = params['Адрес']
+                            if isinstance(address, list):
+                                address = address[0]
+                        if 'Контакты' in params:
+                            contacts = params['Контакты']
+                            if isinstance(contacts, list):
+                                contacts = contacts[0]
                     guests_amount = item_data['quantity']
                     
                     # Check availability
