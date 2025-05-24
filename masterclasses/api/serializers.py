@@ -113,3 +113,65 @@ class MasterClassSerializer(serializers.ModelSerializer):
         if final_price is not None and final_price < 0:
             raise serializers.ValidationError({'price': {'final_price': 'Final price must be non-negative.'}})
         return data 
+
+class ProductUnitSerializer(serializers.ModelSerializer):
+    in_wishlist = serializers.SerializerMethodField()
+    availability = serializers.SerializerMethodField()
+    bucket_link = serializers.SerializerMethodField()
+    totalPrice = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
+    address = serializers.SerializerMethodField()
+    contacts = serializers.SerializerMethodField()
+    type = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MasterClass
+        fields = [
+            'id', 'name', 'in_wishlist', 'availability', 'bucket_link',
+            'slug', 'totalPrice', 'date', 'address', 'contacts', 'type'
+        ]
+
+    def get_in_wishlist(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj in request.user.profile.favorite_masterclasses.all()
+        return False
+
+    def get_availability(self, obj):
+        # Get the event from context
+        event = self.context.get('event')
+        if not event:
+            return False
+        return event.get_remaining_seats() > 0
+
+    def get_bucket_link(self, obj):
+        return [{"url": obj.bucket_link}]
+
+    def get_totalPrice(self, obj):
+        # Get guests amount from context
+        guests_amount = self.context.get('guests_amount', 1)
+        return float(obj.final_price * guests_amount)
+
+    def get_date(self, obj):
+        # Get the event from context
+        event = self.context.get('event')
+        if not event:
+            return None
+        return {
+            'id': event.id,
+            'start_datetime': event.start_datetime.isoformat(),
+            'end_datetime': event.end_datetime.isoformat() if event.end_datetime else None
+        }
+
+    def get_address(self, obj):
+        if 'parameters' in obj.parameters and 'Адрес' in obj.parameters['parameters']:
+            return obj.parameters['parameters']['Адрес'][0]
+        return ''
+
+    def get_contacts(self, obj):
+        if 'parameters' in obj.parameters and 'Контакты' in obj.parameters['parameters']:
+            return obj.parameters['parameters']['Контакты'][0]
+        return ''
+
+    def get_type(self, obj):
+        return 'master_class' 

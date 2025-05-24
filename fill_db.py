@@ -37,7 +37,7 @@ def load_data():
             start_price=masterclass_data['price']['start_price'],
             final_price=masterclass_data['price']['final_price'],
             bucket_link=masterclass_data['bucket_link'][0]['url'],
-            location=address,  # Используем адрес из parameters
+            location=masterclass_data['location'],
             max_seats=masterclass_data['max_seats'],
             age_restriction=masterclass_data['age_restriction'],
             duration=masterclass_data['duration'],

@@ -102,12 +102,15 @@ class OrderSerializer(serializers.ModelSerializer):
     surname = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField()
     telegram = serializers.SerializerMethodField()
+    address = serializers.SerializerMethodField()
+    contacts = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = ['id', 'order_units', 'formatted_date', 'number', 
                  'total_amount', 'final_amount', 'total_sale', 'status',
-                 'email', 'phone', 'surname', 'name', 'telegram']
+                 'email', 'phone', 'surname', 'name', 'telegram',
+                 'address', 'contacts']
 
     def get_email(self, obj):
         return obj.user.email
@@ -147,6 +150,22 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_total_sale(self, obj):
         return float(self.get_total_amount(obj) - self.get_final_amount(obj))
+
+    def get_address(self, obj):
+        # Get address from the first masterclass in the order
+        for item in obj.items.all():
+            if item.masterclass and 'parameters' in item.masterclass.parameters:
+                if 'Адрес' in item.masterclass.parameters['parameters']:
+                    return item.masterclass.parameters['parameters']['Адрес'][0]
+        return ''
+
+    def get_contacts(self, obj):
+        # Get contacts from the first masterclass in the order
+        for item in obj.items.all():
+            if item.masterclass and 'parameters' in item.masterclass.parameters:
+                if 'Контакты' in item.masterclass.parameters['parameters']:
+                    return item.masterclass.parameters['parameters']['Контакты'][0]
+        return ''
 
     def validate_items(self, value):
         """

@@ -6,11 +6,13 @@ from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from ..models import MasterClass, Event
-from .serializers import MasterClassSerializer, EventSerializer
+from .serializers import MasterClassSerializer, EventSerializer, ProductUnitSerializer
 from .filters import MasterClassFilter
 from rest_framework import status
 from django.db import models
 import logging
+from django.utils import timezone
+from rest_framework.views import APIView
 
 logger = logging.getLogger(__name__)
 
@@ -356,4 +358,43 @@ class EventViewSet(viewsets.ModelViewSet):
         }
     )
     def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs) 
+        return super().destroy(request, *args, **kwargs)
+
+
+class ProductUnitListView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="List all product units (masterclasses and certificates)",
+        responses={
+            200: openapi.Response(
+                description="List of product units",
+                schema=ProductUnitSerializer(many=True)
+            )
+        }
+    )
+    def get(self, request):
+        # Get all masterclasses with their events
+        masterclasses = MasterClass.objects.all()
+        result = []
+
+        for masterclass in masterclasses:
+            # Get the next available event for each masterclass
+            event = masterclass.events.filter(
+                start_datetime__gt=timezone.now(),
+                available_seats__gt=0
+            ).first()
+
+            if event:
+                # Add masterclass to result with event context
+                serializer = ProductUnitSerializer(
+                    masterclass,
+                    context={
+                        'request': request,
+                        'event': event,
+                        'guests_amount': 1  # Default guests amount
+                    }
+                )
+                result.append(serializer.data)
+
+        return Response(result) 
