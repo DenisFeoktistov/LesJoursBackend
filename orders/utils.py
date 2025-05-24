@@ -64,25 +64,35 @@ class Cart:
         print(f"[DEBUG] Attempting to remove item - type: {item_type}, id: {item_id}")
         print(f"[DEBUG] Current cart contents: {self.cart}")
         
-        # For certificates, ensure we're using the correct key format
         if item_type == 'certificate':
-            # Try both formats: with and without decimal point
-            possible_keys = [
-                f"{item_type}_{item_id}",  # Original format
-                f"{item_type}_{float(item_id)}",  # With decimal point
-                f"{item_type}_{int(float(item_id))}"  # Without decimal point
-            ]
-            print(f"[DEBUG] Trying possible keys for certificate: {possible_keys}")
+            # For certificates, we need to find the one with matching amount
+            amount_to_remove = Decimal(str(item_id))
+            print(f"[DEBUG] Looking for certificate with amount: {amount_to_remove}")
             
-            for key in possible_keys:
-                if key in self.cart:
-                    print(f"[DEBUG] Found certificate with key: {key}")
-                    del self.cart[key]
-                    self.save()
-                    print(f"[DEBUG] Certificate removed. New cart contents: {self.cart}")
-                    return
+            # Find the first certificate with matching amount
+            for key, item in list(self.cart.items()):
+                if item['type'] == 'certificate':
+                    try:
+                        # For authenticated users, get amount from Certificate model
+                        if self.request.user.is_authenticated:
+                            certificate = Certificate.objects.get(id=item['id'])
+                            item_amount = certificate.amount
+                        else:
+                            # For anonymous users, amount is stored directly in id
+                            item_amount = Decimal(str(item['id']))
+                            
+                        print(f"[DEBUG] Comparing amounts: {item_amount} == {amount_to_remove}")
+                        if item_amount == amount_to_remove:
+                            print(f"[DEBUG] Found matching certificate: {key}")
+                            del self.cart[key]
+                            self.save()
+                            print(f"[DEBUG] Certificate removed. New cart contents: {self.cart}")
+                            return
+                    except (Certificate.DoesNotExist, ValueError) as e:
+                        print(f"[DEBUG] Error processing certificate: {e}")
+                        continue
             
-            print(f"[DEBUG] No matching certificate found in cart")
+            print(f"[DEBUG] No certificate found with amount {amount_to_remove}")
         else:
             # For other items (like events), use the original logic
             item_key = f"{item_type}_{item_id}"
