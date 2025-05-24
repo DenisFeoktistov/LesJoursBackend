@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class OrderItemSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='masterclass.name', read_only=True)
-    bucket_link = serializers.ListField(source='masterclass.bucket_link', read_only=True)
+    bucket_link = serializers.SerializerMethodField()
     slug = serializers.CharField(source='masterclass.slug', read_only=True)
     price = serializers.SerializerMethodField(read_only=True)
     guestsAmount = serializers.IntegerField(source='quantity', read_only=True)
@@ -45,6 +45,22 @@ class OrderItemSerializer(serializers.ModelSerializer):
         instance.price = validated_data.get('price', instance.price)
         instance.save()
         return instance
+
+    def get_bucket_link(self, obj):
+        if obj.masterclass:
+            bucket_links = obj.masterclass.bucket_link
+            if isinstance(bucket_links, str):
+                return [{'url': bucket_links}]
+            elif isinstance(bucket_links, list):
+                if all(isinstance(x, dict) and 'url' in x for x in bucket_links):
+                    return bucket_links
+                elif all(isinstance(x, str) for x in bucket_links):
+                    return [{'url': x} for x in bucket_links]
+                else:
+                    return [{'url': str(x)} for x in bucket_links]
+            else:
+                return [{'url': str(bucket_links)}]
+        return []
 
     def get_price(self, obj):
         return {
