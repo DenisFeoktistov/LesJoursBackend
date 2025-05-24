@@ -53,7 +53,17 @@ class MasterClassSerializer(serializers.ModelSerializer):
         read_only_fields = ['slug', 'created_at', 'updated_at', 'in_wishlist']
 
     def get_bucket_link(self, obj):
-        return [{"url": obj.bucket_link}]
+        if isinstance(obj.bucket_link, list):
+            if all(isinstance(x, dict) and 'url' in x for x in obj.bucket_link):
+                return obj.bucket_link
+            elif all(isinstance(x, str) for x in obj.bucket_link):
+                return [{'url': x} for x in obj.bucket_link]
+            else:
+                return [{'url': str(x)} for x in obj.bucket_link]
+        elif isinstance(obj.bucket_link, str):
+            return [{'url': obj.bucket_link}]
+        else:
+            return [{'url': str(obj.bucket_link)}]
 
     def get_price(self, obj):
         return {
