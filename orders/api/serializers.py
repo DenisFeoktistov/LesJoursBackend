@@ -13,8 +13,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
     guestsAmount = serializers.IntegerField(source='quantity', read_only=True)
     totalPrice = serializers.SerializerMethodField(read_only=True)
     date = serializers.SerializerMethodField(read_only=True)
-    address = serializers.CharField(source='masterclass.location', read_only=True)
-    contacts = serializers.SerializerMethodField(read_only=True)
+    address = serializers.SerializerMethodField()
+    contacts = serializers.SerializerMethodField()
     type = serializers.SerializerMethodField(read_only=True)
     masterclass_id = serializers.PrimaryKeyRelatedField(
         queryset=MasterClass.objects.all(), source='masterclass', write_only=True, required=False
@@ -60,8 +60,15 @@ class OrderItemSerializer(serializers.ModelSerializer):
             }
         return None
 
+    def get_address(self, obj):
+        if obj.masterclass:
+            return obj.masterclass.parameters.get('Адрес', [''])[0]
+        return None
+
     def get_contacts(self, obj):
-        return obj.masterclass.parameters.get('contacts', '')
+        if obj.masterclass:
+            return obj.masterclass.parameters.get('Контакты', [''])[0]
+        return None
 
     def get_type(self, obj):
         return 'master_class'
