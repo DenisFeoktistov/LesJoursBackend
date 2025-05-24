@@ -167,11 +167,17 @@ class ProductUnitSerializer(serializers.ModelSerializer):
         try:
             params = obj.parameters
             if isinstance(params, dict):
-                params_inner = params.get('parameters', {})
-                if isinstance(params_inner, dict):
-                    address = params_inner.get('Адрес', [''])
+                # Try nested structure first
+                if 'parameters' in params and isinstance(params['parameters'], dict):
+                    address = params['parameters'].get('Адрес', [''])
                     if address and isinstance(address, list):
                         return address[0]
+                # Try flat structure
+                elif 'Адрес' in params:
+                    address = params['Адрес']
+                    if isinstance(address, list):
+                        return address[0]
+                    return address
             # Для отладки
             print(f"[DEBUG] parameters for address: {params}")
         except Exception as e:
@@ -182,11 +188,17 @@ class ProductUnitSerializer(serializers.ModelSerializer):
         try:
             params = obj.parameters
             if isinstance(params, dict):
-                params_inner = params.get('parameters', {})
-                if isinstance(params_inner, dict):
-                    contacts = params_inner.get('Контакты', [''])
+                # Try nested structure first
+                if 'parameters' in params and isinstance(params['parameters'], dict):
+                    contacts = params['parameters'].get('Контакты', [''])
                     if contacts and isinstance(contacts, list):
                         return contacts[0]
+                # Try flat structure
+                elif 'Контакты' in params:
+                    contacts = params['Контакты']
+                    if isinstance(contacts, list):
+                        return contacts[0]
+                    return contacts
             # Для отладки
             print(f"[DEBUG] parameters for contacts: {params}")
         except Exception as e:

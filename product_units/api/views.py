@@ -66,8 +66,16 @@ def fetch_product_units(request):
                 event_id, guests_amount, _ = unit.split('_')
                 event = Event.objects.get(id=event_id)
                 masterclass = event.masterclass
-                address = masterclass.parameters.get('Адрес', [''])[0]
-                contacts = masterclass.parameters.get('Контакты', [''])[0]
+                
+                # Get address and contacts from nested parameters structure
+                params = masterclass.parameters
+                address = ''
+                contacts = ''
+                if isinstance(params, dict) and 'parameters' in params:
+                    params_inner = params['parameters']
+                    if isinstance(params_inner, dict):
+                        address = params_inner.get('Адрес', [''])[0]
+                        contacts = params_inner.get('Контакты', [''])[0]
 
                 # Корректная обработка bucket_link
                 bucket_links = masterclass.bucket_link
