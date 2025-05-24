@@ -336,8 +336,8 @@ class CartTest(TestCase):
         self.assertEqual(response.data['final_amount'], 160.00)  # 180.00 - 20.00
 
     def test_one_session_per_masterclass(self):
-        """Test that only one session per masterclass can be in cart"""
-        # Add first event
+        """Тест: в корзине могут быть одновременно несколько ивентов одного мастер-класса"""
+        # Добавляем первый ивент
         data1 = {
             'type': 'event',
             'id': self.event.id,
@@ -346,19 +346,26 @@ class CartTest(TestCase):
         response = self.client.post(self.cart_url, data1, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        # Try to add second event from same masterclass
+        # Добавляем второй ивент того же мастер-класса (создадим новый event)
+        event2 = Event.objects.create(
+            masterclass=self.masterclass,
+            start_datetime=timezone.now() + timedelta(days=2),
+            available_seats=10
+        )
         data2 = {
             'type': 'event',
-            'id': self.event.id,
+            'id': event2.id,
             'quantity': 1
         }
         response = self.client.post(self.cart_url, data2, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        # Check that only the second event is in cart
+        # Проверяем, что оба ивента в корзине
         response = self.client.get(self.cart_url)
-        self.assertEqual(len(response.data['product_units']), 1)
-        self.assertEqual(response.data['product_units'][0]['date']['id'], self.event.id)
+        self.assertEqual(len(response.data['product_units']), 2)
+        event_ids = [unit['date']['id'] for unit in response.data['product_units']]
+        self.assertIn(self.event.id, event_ids)
+        self.assertIn(event2.id, event_ids)
 
     def test_add_different_masterclass_events(self):
         """Test adding events from different masterclasses"""

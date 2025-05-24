@@ -20,23 +20,13 @@ class Cart:
         if item_type == 'event':
             try:
                 event = Event.objects.get(id=item_id)
-                masterclass_id = event.masterclass.id
                 
                 # Check seat availability
                 if event.get_remaining_seats() < quantity:
                     return False
                 
-                # Check if there's already a session for this masterclass in cart
-                for key, item in self.cart.items():
-                    if item['type'] == 'event':
-                        existing_event = Event.objects.get(id=item['id'])
-                        if existing_event.masterclass.id == masterclass_id:
-                            # Remove existing session for this masterclass
-                            del self.cart[key]
-                            break
-                
-                # Add the new event session
-                item_key = f"{item_type}_{item_id}"
+                # Add the new event session with a unique key that includes the event's start_datetime
+                item_key = f"{item_type}_{item_id}_{event.start_datetime.isoformat()}"
                 self.cart[item_key] = {
                     'type': item_type,
                     'id': item_id,
@@ -94,24 +84,36 @@ class Cart:
             
             print(f"[DEBUG] No certificate found with amount {amount_to_remove}")
         else:
-            # For other items (like events), use the original logic
-            item_key = f"{item_type}_{item_id}"
-            if item_key in self.cart:
-                print(f"[DEBUG] Found item to remove: {self.cart[item_key]}")
-                del self.cart[item_key]
-                self.save()
-                print(f"[DEBUG] Item removed. New cart contents: {self.cart}")
-            else:
-                print(f"[DEBUG] Item not found in cart")
+            # For events, find the key that matches the event_id
+            for key, item in list(self.cart.items()):
+                if item['type'] == 'event' and str(item['id']) == str(item_id):
+                    print(f"[DEBUG] Found item to remove: {self.cart[key]}")
+                    del self.cart[key]
+                    self.save()
+                    print(f"[DEBUG] Item removed. New cart contents: {self.cart}")
+                    return
+            print(f"[DEBUG] Item not found in cart")
 
     def update(self, item_type, item_id, quantity):
-        item_key = f"{item_type}_{item_id}"
-        if item_key in self.cart:
-            if quantity > 0:
-                self.cart[item_key]['quantity'] = quantity
-            else:
-                del self.cart[item_key]
-            self.save()
+        if item_type == 'event':
+            # For events, find the key that matches the event_id
+            for key, item in list(self.cart.items()):
+                if item['type'] == 'event' and str(item['id']) == str(item_id):
+                    if quantity > 0:
+                        self.cart[key]['quantity'] = quantity
+                    else:
+                        del self.cart[key]
+                    self.save()
+                    return
+        else:
+            # For certificates, use the original logic
+            item_key = f"{item_type}_{item_id}"
+            if item_key in self.cart:
+                if quantity > 0:
+                    self.cart[item_key]['quantity'] = quantity
+                else:
+                    del self.cart[item_key]
+                self.save()
 
     def clear(self):
         self.cart = {}
