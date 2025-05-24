@@ -278,21 +278,6 @@ class CheckoutOrderView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
 
-            # Validate request data
-            user_info = request.data.get('user', {})
-            if not user_info:
-                return Response(
-                    {'error': 'User information is required'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            cart_data = request.data.get('cart', {})
-            if not cart_data:
-                return Response(
-                    {'error': 'Cart data is required'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
             # Get cart from session
             cart = Cart(request)
             if not cart.cart:
@@ -303,32 +288,41 @@ class CheckoutOrderView(APIView):
 
             # Validate cart items availability
             for item in cart.get_items():
-                if item['type'] == 'master_class' and not item['availability']:
-                    return Response(
-                        {'error': f"Not enough seats available for {item['name']}"},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                if item['type'] == 'event':
+                    event = get_object_or_404(Event, id=item['id'])
+                    if event.get_remaining_seats() < item['quantity']:
+                        return Response(
+                            {'error': f"Not enough seats available for {event.masterclass.name}"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
 
             # Create order in transaction
             with transaction.atomic():
-                # Create order
+                # Create order with contact information
                 order = Order.objects.create(
                     user=request.user,
-                    total_price=cart.get_final_amount()
+                    total_price=cart.get_final_amount(),
+                    email=request.data.get('email'),
+                    phone=request.data.get('phone'),
+                    surname=request.data.get('surname'),
+                    name=request.data.get('name'),
+                    patronymic=request.data.get('patronymic'),
+                    comment=request.data.get('comment'),
+                    telegram=request.data.get('telegram')
                 )
 
                 # Create order items
                 for item in cart.get_items():
-                    if item['type'] == 'master_class':
-                        event = get_object_or_404(Event, id=item['date']['id'])
+                    if item['type'] == 'event':
+                        event = get_object_or_404(Event, id=item['id'])
                         # Update available seats
-                        event.available_seats -= item['guestsAmount']
+                        event.available_seats -= item['quantity']
                         event.save()
                         # Create order item
                         OrderItem.objects.create(
                             order=order,
                             masterclass=event.masterclass,
-                            quantity=item['guestsAmount'],
+                            quantity=item['quantity'],
                             price=event.masterclass.final_price
                         )
                     elif item['type'] == 'certificate':

@@ -121,11 +121,13 @@ class OrderSerializer(serializers.ModelSerializer):
     final_amount = serializers.SerializerMethodField()
     total_sale = serializers.SerializerMethodField()
     status = serializers.CharField(read_only=False, required=False)
-    email = serializers.SerializerMethodField()
-    phone = serializers.SerializerMethodField()
-    surname = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
-    telegram = serializers.SerializerMethodField()
+    email = serializers.EmailField(required=False)
+    phone = serializers.CharField(required=False)
+    surname = serializers.CharField(required=False)
+    name = serializers.CharField(required=False)
+    patronymic = serializers.CharField(required=False)
+    comment = serializers.CharField(required=False)
+    telegram = serializers.CharField(required=False)
     address = serializers.SerializerMethodField()
     contacts = serializers.SerializerMethodField()
 
@@ -133,7 +135,7 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = ['id', 'order_units', 'formatted_date', 'number', 
                  'total_amount', 'final_amount', 'total_sale', 'status',
-                 'email', 'phone', 'surname', 'name', 'telegram',
+                 'email', 'phone', 'surname', 'name', 'patronymic', 'comment', 'telegram',
                  'address', 'contacts']
 
     def get_email(self, obj):

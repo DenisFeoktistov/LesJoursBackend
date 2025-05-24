@@ -23,6 +23,13 @@ class Order(models.Model):
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    email = models.EmailField(null=True, blank=True)
+    phone = models.CharField(max_length=20, null=True, blank=True)
+    surname = models.CharField(max_length=100, null=True, blank=True)
+    name = models.CharField(max_length=100, null=True, blank=True)
+    patronymic = models.CharField(max_length=100, null=True, blank=True)
+    comment = models.TextField(null=True, blank=True)
+    telegram = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']
