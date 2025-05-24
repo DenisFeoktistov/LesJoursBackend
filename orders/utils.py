@@ -127,8 +127,24 @@ class Cart:
                     masterclass = event.masterclass
                     guests_amount = cart_item.quantity
                     availability = event.get_remaining_seats() >= guests_amount
-                    address = masterclass.parameters.get('Адрес', [''])[0] if isinstance(masterclass.parameters, dict) and 'Адрес' in masterclass.parameters else ''
-                    contacts = masterclass.parameters.get('Контакты', [''])[0] if isinstance(masterclass.parameters, dict) and 'Контакты' in masterclass.parameters else ''
+                    params = masterclass.parameters
+                    address = ''
+                    contacts = ''
+                    if isinstance(params, dict):
+                        if 'parameters' in params and isinstance(params['parameters'], dict):
+                            address = params['parameters'].get('Адрес', [''])
+                            if address and isinstance(address, list):
+                                address = address[0]
+                            contacts = params['parameters'].get('Контакты', [''])
+                            if contacts and isinstance(contacts, list):
+                                contacts = contacts[0]
+                        else:
+                            address = params.get('Адрес', [''])
+                            if isinstance(address, list):
+                                address = address[0]
+                            contacts = params.get('Контакты', [''])
+                            if isinstance(contacts, list):
+                                contacts = contacts[0]
                     bucket_links = masterclass.bucket_link
                     if isinstance(bucket_links, str):
                         bucket_links = [{'url': bucket_links}]
@@ -174,8 +190,24 @@ class Cart:
                         masterclass = event.masterclass
                         guests_amount = item_data['quantity']
                         availability = event.get_remaining_seats() >= guests_amount
-                        address = masterclass.parameters.get('Адрес', [''])[0] if isinstance(masterclass.parameters, dict) and 'Адрес' in masterclass.parameters else ''
-                        contacts = masterclass.parameters.get('Контакты', [''])[0] if isinstance(masterclass.parameters, dict) and 'Контакты' in masterclass.parameters else ''
+                        params = masterclass.parameters
+                        address = ''
+                        contacts = ''
+                        if isinstance(params, dict):
+                            if 'parameters' in params and isinstance(params['parameters'], dict):
+                                address = params['parameters'].get('Адрес', [''])
+                                if address and isinstance(address, list):
+                                    address = address[0]
+                                contacts = params['parameters'].get('Контакты', [''])
+                                if contacts and isinstance(contacts, list):
+                                    contacts = contacts[0]
+                            else:
+                                address = params.get('Адрес', [''])
+                                if isinstance(address, list):
+                                    address = address[0]
+                                contacts = params.get('Контакты', [''])
+                                if isinstance(contacts, list):
+                                    contacts = contacts[0]
                         bucket_links = masterclass.bucket_link
                         if isinstance(bucket_links, str):
                             bucket_links = [{'url': bucket_links}]
