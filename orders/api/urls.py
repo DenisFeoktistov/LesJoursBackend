@@ -32,4 +32,8 @@ urlpatterns = [
     path('promo/anon_check/', promo_unauth, name='promo-unauth'),
 
     path('checkout/<int:user_id>/', CheckoutOrderView.as_view(), name='checkout-order'),
+
+    # User orders and order info by id
+    path('user_orders/<int:user_id>', __import__('orders.api.views').api.views.UserOrdersByIdView.as_view(), name='user-orders-by-id'),
+    path('info/<int:order_id>', __import__('orders.api.views').api.views.OrderInfoByIdView.as_view(), name='order-info-by-id'),
 ] 

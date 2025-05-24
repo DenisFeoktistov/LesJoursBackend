@@ -370,4 +370,28 @@ class UserPasswordViewSet(viewsets.ViewSet):
 
         user.set_password(new_password)
         user.save()
-        return Response({'message': 'Password successfully changed'}) 
+        return Response({'message': 'Password successfully changed'})
+
+
+class UserOrdersByIdView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def get(self, request, user_id):
+        from .serializers import OrderSerializer
+        from ..models import Order
+        if request.user.id != int(user_id):
+            return Response({'detail': 'Forbidden'}, status=403)
+        orders = Order.objects.filter(user_id=user_id)
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data)
+
+
+class OrderInfoByIdView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def get(self, request, order_id):
+        from .serializers import OrderSerializer
+        from ..models import Order
+        order = get_object_or_404(Order, id=order_id)
+        if order.user != request.user:
+            return Response({'detail': 'Forbidden'}, status=403)
+        serializer = OrderSerializer(order)
+        return Response(serializer.data) 
