@@ -3,7 +3,7 @@
         "id": 1,
         "price": {
             "start_price": 2500,
-            "final_price": 2500
+            "final_price": 2200
         },
         "short_description": "Научитесь создавать мини-тортики в формате бенто с красивым декором и нежным вкусом.",
         "slug": "",
@@ -149,7 +149,7 @@
         "id": 3,
         "price": {
             "start_price": 2700,
-            "final_price": 2700
+            "final_price": 2500
         },
         "short_description": "Погрузитесь в атмосферу уюта и создайте собственную ароматическую свечу.",
         "slug": "",
@@ -364,7 +364,7 @@
         "id": 6,
         "price": {
             "start_price": 3000,
-            "final_price": 3000
+            "final_price": 2700
         },
         "short_description": "Создайте стильную композицию из сухоцветов, которая украсит любой интерьер.",
         "slug": "",
@@ -433,7 +433,7 @@
         "id": 7,
         "price": {
             "start_price": 3100,
-            "final_price": 3100
+            "final_price": 3000
         },
         "short_description": "Научитесь вязать стильные и практичные корзинки для хранения из мягкой пряжи.",
         "slug": "",
@@ -1231,7 +1231,7 @@
         "id": 18,
         "price": {
             "start_price": 3700,
-            "final_price": 3700
+            "final_price": 3200
         },
         "short_description": "Создайте ароматные саше с травами и эфирными маслами для уюта в доме.",
         "slug": "",
@@ -1507,7 +1507,7 @@
         "id": 22,
         "price": {
             "start_price": 3500,
-            "final_price": 3500
+            "final_price": 3000
         },
         "short_description": "Научитесь создавать красивые сезонные венки для украшения дома.",
         "slug": "",
@@ -1645,7 +1645,7 @@
         "id": 24,
         "price": {
             "start_price": 3800,
-            "final_price": 3800
+            "final_price": 3000
         },
         "short_description": "Научитесь делать свечи необычных форм: звезды, сердца, цветы.",
         "slug": "",
