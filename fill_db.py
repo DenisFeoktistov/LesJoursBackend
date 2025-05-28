@@ -36,7 +36,7 @@ def load_data():
             long_description=masterclass_data['long_description'],
             start_price=masterclass_data['price']['start_price'],
             final_price=masterclass_data['price']['final_price'],
-            bucket_link=masterclass_data['bucket_link'][0]['url'],
+            bucket_link=[item['url'] for item in masterclass_data['bucket_link']],
             location=masterclass_data['location'],
             max_seats=masterclass_data['max_seats'],
             age_restriction=masterclass_data['age_restriction'],

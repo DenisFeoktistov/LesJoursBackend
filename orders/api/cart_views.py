@@ -57,7 +57,7 @@ class CartView(APIView):
                         # Check total seats including those already in cart
                         cart_quantity = 0
                         for item in cart.get_items():
-                            if item.get('type') == 'master_class' and str(item.get('id')) == str(product_unit_id):
+                            if item.get('type') == 'event' and str(item.get('id')) == str(product_unit_id):
                                 cart_quantity += item.get('guestsAmount', 0)
                         if event.get_remaining_seats() < cart_quantity + guests_amount:
                             return Response({'error': 'Not enough seats available'}, status=status.HTTP_400_BAD_REQUEST)
@@ -87,7 +87,7 @@ class CartView(APIView):
                     # Check total seats including those already in cart
                     cart_quantity = 0
                     for item in cart.get_items():
-                        if item.get('type') == 'master_class' and str(item.get('id')) == str(item_id):
+                        if item.get('type') == 'event' and str(item.get('id')) == str(item_id):
                             cart_quantity += item.get('guestsAmount', 0)
                     if event.get_remaining_seats() < cart_quantity + quantity:
                         return Response({'error': 'Not enough seats available'}, status=status.HTTP_400_BAD_REQUEST)
@@ -126,7 +126,7 @@ class CartView(APIView):
                     event = Event.objects.get(id=item_id)
                     cart_quantity = 0
                     for item in cart.get_items():
-                        if item.get('type') == 'master_class' and str(item.get('id')) == str(item_id):
+                        if item.get('type') == 'event' and str(item.get('id')) == str(item_id):
                             cart_quantity += item.get('guestsAmount', 0)
                     if event.get_remaining_seats() - cart_quantity < quantity:
                         return Response({'error': 'Not enough seats available'}, status=status.HTTP_400_BAD_REQUEST)
@@ -329,7 +329,7 @@ class CheckoutOrderView(APIView):
                 for item in cart_items:
                     if hasattr(item, 'event') and item.event:
                         event = item.event
-                        event.available_seats -= item.quantity
+                        event.occupied_seats += item.quantity
                         event.save()
                         OrderItem.objects.create(
                             order=order,
@@ -349,7 +349,7 @@ class CheckoutOrderView(APIView):
                         )
                     elif isinstance(item, dict) and item.get('type') == 'event':
                         event = get_object_or_404(Event, id=item['id'])
-                        event.available_seats -= item['quantity']
+                        event.occupied_seats += item['quantity']
                         event.save()
                         OrderItem.objects.create(
                             order=order,
