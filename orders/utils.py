@@ -173,7 +173,7 @@ class Cart:
                         },
                         'address': address,
                         'contacts': contacts,
-                        'type': 'event'
+                        'type': 'master_class'
                     })
                 elif cart_item.certificate:
                     certificate = cart_item.certificate
@@ -236,7 +236,7 @@ class Cart:
                             },
                             'address': address,
                             'contacts': contacts,
-                            'type': 'event'
+                            'type': 'master_class'
                         })
                     except Event.DoesNotExist:
                         continue
