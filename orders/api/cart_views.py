@@ -97,7 +97,8 @@ class CartView(APIView):
             elif item_type == 'certificate':
                 amount = data.get('amount', item_id)
                 if request.user.is_authenticated:
-                    certificate = Certificate.objects.create(user=request.user, amount=Decimal(amount), code='AUTO')
+                    unique_code = f"AUTO_{uuid.uuid4().hex[:8]}"
+                    certificate = Certificate.objects.create(user=request.user, amount=Decimal(amount), code=unique_code)
                     cart.add('certificate', certificate.id, quantity, user=request.user)
                 else:
                     cart.add('certificate', amount, quantity)
@@ -174,32 +175,45 @@ class CartView(APIView):
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def update_cart_from_cookies(request, user_id):
-    """Update cart from cookies"""
+    """Update cart from cookies, merging with existing cart (добавляет только новые товары, не очищая корзину)"""
     try:
         data = json.loads(request.body)
         product_unit_list = data.get('product_unit_list', [])
         cart = Cart(request)
-        
-        # Clear existing cart
-        cart.clear()
-        
-        # If product_unit_list is ["false"], just return empty list
+
+        # Если product_unit_list == ["false"], просто возвращаем пустой список
         if len(product_unit_list) == 1 and product_unit_list[0] == "false":
             return Response([])
-        
-        # Add items from cookies
+
+        # Получаем текущие товары в корзине
+        current_items = cart.get_items()
+        current_events = set()
+        current_certificates = set()
+        for item in current_items:
+            if item.get('type') == 'event':
+                current_events.add(str(item.get('id')))
+            elif item.get('type') == 'certificate':
+                current_certificates.add(str(item.get('amount')))
+
+        # Добавляем только те товары из cookies, которых нет в корзине
         for unit in product_unit_list:
             if unit.startswith('certificate_'):
                 amount = unit.split('_')[1]
+                if amount in current_certificates:
+                    continue
                 if request.user.is_authenticated:
                     certificate = Certificate.objects.create(user=request.user, amount=Decimal(amount), code='AUTO')
                     cart.add('certificate', certificate.id, user=request.user)
                 else:
                     cart.add('certificate', amount)
+                current_certificates.add(amount)
             else:
                 event_id, guests_amount, _ = unit.split('_')
+                if event_id in current_events:
+                    continue
                 cart.add('event', event_id, int(guests_amount))
-        
+                current_events.add(event_id)
+
         return Response(product_unit_list)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -242,7 +256,8 @@ def promo_unauth(request):
             if unit.startswith('certificate_'):
                 amount = unit.split('_')[1]
                 if request.user.is_authenticated:
-                    certificate = Certificate.objects.create(user=request.user, amount=Decimal(amount), code='AUTO')
+                    unique_code = f"AUTO_{uuid.uuid4().hex[:8]}"
+                    certificate = Certificate.objects.create(user=request.user, amount=Decimal(amount), code=unique_code)
                     cart.add('certificate', certificate.id, user=request.user)
                 else:
                     cart.add('certificate', amount)
