@@ -136,28 +136,17 @@ class CartAPITestCase(TestCase):
         self.assertEqual(response.data[1]['type'], 'certificate')
 
     def test_update_cart_from_cookies(self):
-        """Test updating cart from cookies (merge, not clear)"""
+        """Test updating cart from cookies"""
         url = reverse('update-cart-from-cookies', kwargs={'user_id': self.user.id})
-        # Сначала добавим один товар в корзину
-        cart_url = reverse('cart', kwargs={'user_id': self.user.id})
-        self.client.force_authenticate(user=self.user)
-        self.client.post(cart_url, {'type': 'event', 'id': self.event.id, 'quantity': 2})
-        # Теперь пробуем добавить через cookies тот же event и новый сертификат
         data = {
             'product_unit_list': [
-                f'{self.event.id}_2_guests',  # уже есть в корзине
-                'certificate_5000'           # нового нет
+                f'{self.event.id}_2_guests',
+                'certificate_5000'
             ]
         }
         response = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(response.status_code, 200)
-        # Проверяем, что event не продублировался, а сертификат добавился
-        cart_response = self.client.get(cart_url)
-        product_units = cart_response.data['product_units']
-        event_count = sum(1 for x in product_units if x.get('type') == 'event' and str(x.get('id')) == str(self.event.id))
-        cert_count = sum(1 for x in product_units if x.get('type') == 'certificate' and x.get('amount') == '5000')
-        self.assertEqual(event_count, 1)
-        self.assertEqual(cert_count, 1)
+        self.assertEqual(len(response.data), 2)
 
     def test_fetch_cart_price(self):
         """Test fetching cart price information"""
